@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Overlay - Bảng Xếp Hạng</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: transparent;
+    font-family: 'Arial', sans-serif;
+    color: #fff;
+    width: 1280px; height: 720px;
+    overflow: hidden;
+  }
+
+  /* ===== Settings panel (chỉ hiện khi ?settings=1) ===== */
+  #settings-panel {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.82);
+    z-index: 999;
+    overflow-y: auto;
+    padding: 20px;
+  }
+  #settings-panel.open { display: block; }
+  .sp-box {
+    background: #7c5cbf;
+    border-radius: 12px;
+    padding: 0 0 16px;
+    max-width: 680px;
+    margin: 0 auto;
+    font-size: 14px;
+  }
+  .sp-title {
+    background: #6a4bb0;
+    border-radius: 12px 12px 0 0;
+    padding: 12px 18px;
+    font-weight: bold; font-size: 16px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .sp-body { padding: 14px 18px; }
+  .sp-section { margin-bottom: 18px; }
+  .sp-section h3 { font-size: 13px; font-weight: bold; margin-bottom: 10px; color: #e0d0ff; border-bottom: 1px solid rgba(255,255,255,.2); padding-bottom: 4px; }
+  .sp-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+  .sp-row label { min-width: 140px; color: #ddd; font-size: 13px; }
+  .sp-row input[type=number] { width: 60px; padding: 4px 6px; border-radius: 5px; border: 1px solid #aaa; background: #2a2a38; color: #fff; font-size: 13px; }
+  .sp-row input[type=checkbox] { width: 16px; height: 16px; cursor: pointer; accent-color: #a07fff; }
+  .radio-group { display: flex; gap: 14px; }
+  .radio-group label { display: flex; align-items: center; gap: 5px; cursor: pointer; min-width: auto; }
+  .radio-group input[type=radio] { accent-color: #a07fff; }
+  .sp-btn {
+    display: block; width: calc(100% - 36px); margin: 8px 18px 0;
+    padding: 9px; background: #5a3fa0; color: #fff; font-size: 14px; font-weight: bold;
+    border: none; border-radius: 8px; cursor: pointer;
+  }
+  .sp-btn:hover { background: #6a4fb0; }
+  /* toggle switch */
+  .toggle { position: relative; width: 44px; height: 24px; cursor: pointer; }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; inset: 0; background: #555; border-radius: 24px; transition: .3s; }
+  .slider:before { content:""; position: absolute; width: 18px; height: 18px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: .3s; }
+  input:checked + .slider { background: #a07fff; }
+  input:checked + .slider:before { transform: translateX(20px); }
+  .sp-hint { font-size: 11px; color: #ccc; margin-top: 2px; }
+
+  /* ===== Grid overlay ===== */
+  #grid {
+    display: grid;
+    gap: 6px;
+    padding: 10px;
+    width: 100%;
+    align-content: start;
+  }
+
+  .card {
+    background: rgba(30,30,38,0.88);
+    border-radius: 10px;
+    padding: 7px 9px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+  }
+  .card.active { outline: 2px solid #ffd54a; background: rgba(60,45,0,0.92); }
+  .card.top1 { background: rgba(140,90,0,0.9); }
+  .card.top2 { background: rgba(70,70,80,0.9); }
+  .card.top3 { background: rgba(100,55,10,0.9); }
+
+  .rank { font-size: 14px; font-weight: bold; width: 22px; text-align: center; flex-shrink: 0; color: #ccc; }
+  .card.top1 .rank { color: #ffd700; font-size: 16px; }
+  .card.top2 .rank { color: #c0c0c0; }
+  .card.top3 .rank { color: #cd7f32; }
+
+  .av {
+    width: 34px; height: 34px; border-radius: 50%;
+    background: #555; display: flex; align-items: center; justify-content: center;
+    font-weight: bold; font-size: 12px; flex-shrink: 0;
+    border: 2px solid rgba(255,255,255,.2);
+    background-size: cover; background-position: center;
+  }
+  .av.large { width: 44px; height: 44px; font-size: 14px; }
+  .card.top1 .av { border-color: #ffd700; }
+  .card.top2 .av { border-color: #c0c0c0; }
+  .card.top3 .av { border-color: #cd7f32; }
+
+  .info { flex: 1; min-width: 0; }
+  .iname { font-size: 13px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-shadow: 0 1px 4px rgba(0,0,0,.8); }
+  .iscore { font-size: 11px; color: #ddd; text-shadow: 0 1px 4px rgba(0,0,0,.8); }
+  .card.top1 .iscore { color: #ffe57a; }
+
+
+</style>
+</head>
+<body>
+
+<!-- Settings panel -->
+<div id="settings-panel">
+  <div class="sp-box">
+    <div class="sp-title">
+      ⚙️ Cài đặt Widget Xếp hạng
+      <label class="toggle"><input type="checkbox" id="tog-enabled" checked onchange="applySettings()"><span class="slider"></span></label>
+    </div>
+    <div class="sp-body">
+
+      <div class="sp-section">
+        <h3>Quy tắc sắp xếp</h3>
+        <div class="sp-row">
+          <label>Thứ tự xếp hạng đa cột:</label>
+          <div class="radio-group">
+            <label><input type="radio" name="order" value="col" checked onchange="applySettings()"> Dọc</label>
+            <label><input type="radio" name="order" value="row" onchange="applySettings()"> Ngang</label>
+          </div>
+        </div>
+        <div class="sp-row">
+          <label>Tối đa mỗi cột:</label>
+          <input type="number" id="perCol" value="10" min="1" max="25" onchange="applySettings()"> người
+        </div>
+        <p class="sp-hint">★ Tối đa 25 người/cột, tối đa 4 cột</p>
+      </div>
+
+      <div class="sp-section">
+        <h3>Phần tử hiển thị</h3>
+        <div class="sp-row">
+          <label>Nội dung hiển thị:</label>
+          <label><input type="checkbox" id="show-name" checked onchange="applySettings()"> Tên</label>
+          <label><input type="checkbox" id="show-score" checked onchange="applySettings()"> Điểm số</label>
+        </div>
+        <div class="sp-row">
+          <label>Hiển thị ảnh đại diện:</label>
+          <div class="radio-group">
+            <label><input type="radio" name="avsize" value="small" onchange="applySettings()"> Nhỏ</label>
+            <label><input type="radio" name="avsize" value="large" checked onchange="applySettings()"> Lớn</label>
+            <label><input type="radio" name="avsize" value="none" onchange="applySettings()"> Không</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="sp-section">
+        <h3>Phạm vi hiển thị</h3>
+        <div class="sp-row">
+          <label>Phạm vi hiển thị:</label>
+          TOP <input type="number" id="topFrom" value="1" min="1" max="100" onchange="applySettings()" style="width:50px;">
+          &nbsp;→&nbsp; TOP <input type="number" id="topTo" value="40" min="1" max="100" onchange="applySettings()" style="width:50px;">
+        </div>
+      </div>
+
+    </div>
+    <button class="sp-btn" onclick="closeSettings()">✓ Đóng và áp dụng</button>
+  </div>
+</div>
+
+<div id="grid"></div>
+
+
+<script>
+let state = null;
+let cfg = {
+  enabled: true,
+  order: "col",     // col = dọc, row = ngang
+  perCol: 10,
+  showName: true,
+  showScore: true,
+  avSize: "large",  // small | large | none
+  topFrom: 1,
+  topTo: 40,
+};
+
+const RANK_ICONS = ["👑","🥈","🥉"];
+
+// Đọc settings từ URL params (được tạo bởi control panel)
+const _p = new URLSearchParams(location.search);
+function _pv(k, def) { return _p.has(k) ? _p.get(k) : def; }
+
+// Áp dụng vào UI nếu có params
+if (_p.has("order"))  document.querySelector(`input[name="order"][value="${_pv("order","col")}"]`).checked = true;
+if (_p.has("perCol")) document.getElementById("perCol").value = _pv("perCol","10");
+if (_p.has("name"))   document.getElementById("show-name").checked  = _pv("name","1")==="1";
+if (_p.has("score"))  document.getElementById("show-score").checked = _pv("score","1")==="1";
+if (_p.has("av"))     document.querySelector(`input[name="avsize"][value="${_pv("av","large")}"]`).checked = true;
+if (_p.has("from"))   document.getElementById("topFrom").value = _pv("from","1");
+if (_p.has("to"))     document.getElementById("topTo").value   = _pv("to","40");
+applySettings();
+
+// Hiện settings panel nếu ?settings=1
+const showSettings = _pv("settings","0") === "1";
+if (showSettings) document.getElementById("settings-panel").classList.add("open");
+
+function closeSettings() {
+  document.getElementById("settings-panel").classList.remove("open");
+}
+
+function applySettings() {
+  cfg.enabled  = document.getElementById("tog-enabled").checked;
+  cfg.order    = document.querySelector('input[name="order"]:checked').value;
+  cfg.perCol   = Math.min(25, Math.max(1, parseInt(document.getElementById("perCol").value)||10));
+  cfg.showName  = document.getElementById("show-name").checked;
+  cfg.showScore = document.getElementById("show-score").checked;
+  cfg.avSize   = document.querySelector('input[name="avsize"]:checked').value;
+  cfg.topFrom  = Math.max(1, parseInt(document.getElementById("topFrom").value)||1);
+  cfg.topTo    = Math.max(cfg.topFrom, parseInt(document.getElementById("topTo").value)||40);
+  render();
+}
+
+function fmtTime(sec) {
+  sec = Math.max(0, sec|0);
+  return String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0");
+}
+function initials(name){ return name.trim().slice(0,2).toUpperCase(); }
+
+function render() {
+  if (!state) return;
+
+  const grid = document.getElementById("grid");
+  if (!cfg.enabled) { grid.innerHTML = ""; return; }
+
+  // sort & slice
+  let idols = [...state.idols].sort((a,b) => b.score - a.score);
+  idols = idols.slice(cfg.topFrom - 1, cfg.topTo);
+
+  // columns
+  const numCols = Math.min(4, Math.ceil(idols.length / cfg.perCol)) || 1;
+  grid.style.gridTemplateColumns = `repeat(${numCols}, 1fr)`;
+
+  // reorder: dọc = fill column by column, ngang = left-right
+  let ordered = [];
+  if (cfg.order === "col") {
+    const rows = Math.ceil(idols.length / numCols);
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < numCols; c++) {
+        const idx = c * rows + r;
+        if (idx < idols.length) ordered.push({idol: idols[idx], globalRank: cfg.topFrom - 1 + (c * rows + r)});
+      }
+    }
+  } else {
+    ordered = idols.map((idol, i) => ({ idol, globalRank: cfg.topFrom - 1 + i }));
+  }
+
+  grid.innerHTML = "";
+  ordered.forEach(({idol, globalRank}) => {
+    const i = globalRank; // 0-based global rank
+    const card = document.createElement("div");
+    let cls = "card";
+    if (idol.active) cls += " active";
+    if (i === 0) cls += " top1";
+    else if (i === 1) cls += " top2";
+    else if (i === 2) cls += " top3";
+    card.className = cls;
+
+    // rank
+    const rankEl = document.createElement("div");
+    rankEl.className = "rank";
+    rankEl.textContent = i < 3 ? RANK_ICONS[i] : (i+1);
+    card.appendChild(rankEl);
+
+    // avatar
+    if (cfg.avSize !== "none") {
+      const av = document.createElement("div");
+      av.className = "av" + (cfg.avSize === "large" ? " large" : "");
+      if (idol.avatar) av.style.backgroundImage = `url('${idol.avatar}')`;
+      else av.textContent = initials(idol.name);
+      card.appendChild(av);
+    }
+
+    // info
+    const info = document.createElement("div");
+    info.className = "info";
+    if (cfg.showName) {
+      const n = document.createElement("div");
+      n.className = "iname"; n.textContent = idol.name;
+      info.appendChild(n);
+    }
+    if (cfg.showScore) {
+      const s = document.createElement("div");
+      s.className = "iscore"; s.textContent = idol.score.toLocaleString();
+      info.appendChild(s);
+    }
+    card.appendChild(info);
+    grid.appendChild(card);
+  });
+}
+
+function connect() {
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  const ws = new WebSocket(`${proto}://${location.host}/ws`);
+  ws.onmessage = ev => {
+    const msg = JSON.parse(ev.data);
+    if (msg.type === "state") { state = msg.data; render(); }
+  };
+  ws.onclose = () => setTimeout(connect, 1500);
+}
+connect();
+</script>
+</body>
+</html>

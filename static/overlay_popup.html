@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Overlay - Widget Idol</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: transparent;
+    font-family: 'Arial', sans-serif;
+    width: 580px;
+    overflow: hidden;
+  }
+
+  #widget {
+    width: 580px;
+    background: rgba(12,12,18,0.93);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 6px 32px rgba(0,0,0,0.7);
+    position: relative;
+  }
+
+  /* Tên idol - tab trên */
+  #w-name {
+    background: rgba(0,0,0,0.7);
+    text-align: center;
+    padding: 7px 20px;
+    font-size: 15px;
+    font-weight: bold;
+    color: #fff;
+    letter-spacing: 1.5px;
+    border-radius: 14px 14px 0 0;
+  }
+
+  /* Thân: timer + điểm */
+  #w-body {
+    padding: 12px 20px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  /* Timer lớn bên trái */
+  #w-timer {
+    font-size: 42px;
+    font-weight: bold;
+    color: #fff;
+    letter-spacing: 3px;
+    text-shadow: 0 0 16px rgba(0,200,255,0.4);
+    min-width: 130px;
+    line-height: 1;
+  }
+  #w-timer.finished { color: #ffd54a; text-shadow: 0 0 16px rgba(255,213,74,0.6); }
+
+  /* Điểm bên phải - to hơn, không có label "diamonds" */
+  #w-score {
+    font-size: 48px;
+    font-weight: bold;
+    color: #00d4ff;
+    text-shadow: 0 0 18px rgba(0,212,255,0.6);
+    line-height: 1;
+    text-align: right;
+  }
+
+  /* Thanh tiến trình - to hơn */
+  #w-bar-wrap {
+    height: 28px;
+    background: rgba(255,255,255,0.06);
+    position: relative;
+    overflow: hidden;
+  }
+  #w-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #00b4d8, #00e5ff);
+    transition: width 1s linear;
+    position: relative;
+  }
+  /* Điểm bên trong thanh */
+  #w-bar-score {
+    position: absolute;
+    left: 0; top: 0; bottom: 0; right: 0;
+    display: flex;
+    align-items: center;
+    padding-left: 10px;
+    font-size: 15px;
+    font-weight: bold;
+    color: rgba(0,0,0,0.8);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Thông báo hết giờ */
+  #w-finish {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    border-radius: 14px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 5px;
+    text-align: center;
+  }
+  #w-finish.show { display: flex; animation: fadeIn .4s ease; }
+  @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+  #w-finish-icon  { font-size: 34px; }
+  #w-finish-text  { font-size: 22px; font-weight: bold; color: #ffd54a; }
+  #w-finish-score { font-size: 30px; font-weight: bold; color: #00d4ff; }
+  #w-finish-sub   { font-size: 13px; color: #999; }
+</style>
+</head>
+<body>
+<div id="widget">
+  <div id="w-name">---</div>
+  <div id="w-body">
+    <div id="w-timer">--:--</div>
+    <div id="w-score">0</div>
+  </div>
+  <div id="w-bar-wrap">
+    <div id="w-bar"></div>
+    <div id="w-bar-score">0</div>
+  </div>
+
+  <div id="w-finish">
+    <div id="w-finish-icon">⏰</div>
+    <div id="w-finish-text">Hết thời gian!</div>
+    <div id="w-finish-score"></div>
+    <div id="w-finish-sub"></div>
+  </div>
+</div>
+
+<script>
+let state = null;
+let prevFinished = false;
+
+function fmtTime(sec) {
+  sec = Math.max(0, sec|0);
+  return String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0");
+}
+
+function render() {
+  if (!state) return;
+  const idol = state.idols.find(i => i.active) || null;
+  const t = state.timer;
+
+  document.getElementById("w-name").textContent = idol ? idol.name.toUpperCase() : "---";
+
+  const timerEl = document.getElementById("w-timer");
+  timerEl.textContent = fmtTime(t.remaining);
+  timerEl.classList.toggle("finished", t.finished);
+
+  const score = idol ? idol.score : 0;
+  document.getElementById("w-score").textContent = score.toLocaleString();
+  document.getElementById("w-bar-score").textContent = score.toLocaleString();
+
+  // thanh tăng từ 0 → 100% khi hết giờ
+  const elapsed = t.duration - t.remaining;
+  const pct = t.duration > 0 ? Math.min(100, elapsed / t.duration * 100) : 0;
+  document.getElementById("w-bar").style.width = pct + "%";
+
+  // finish overlay
+  const finishEl = document.getElementById("w-finish");
+  if (t.finished && !prevFinished) {
+    document.getElementById("w-finish-score").textContent = score.toLocaleString() + " 💎";
+    document.getElementById("w-finish-sub").textContent = idol ? idol.name : "";
+    finishEl.classList.add("show");
+  } else if (!t.finished) {
+    finishEl.classList.remove("show");
+  }
+  prevFinished = t.finished;
+}
+
+function connect() {
+  const proto = location.protocol === "https:" ? "wss" : "ws";
+  const ws = new WebSocket(`${proto}://${location.host}/ws`);
+  ws.onmessage = ev => {
+    const msg = JSON.parse(ev.data);
+    if (msg.type === "state") { state = msg.data; render(); }
+  };
+  ws.onclose = () => setTimeout(connect, 1500);
+}
+connect();
+</script>
+</body>
+</html>

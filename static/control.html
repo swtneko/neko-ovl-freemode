@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Điều khiển Overlay</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: Arial, sans-serif; background: #1b1b1f; color: #eee; margin: 0; padding: 10px; }
+
+  .layout { display: flex; gap: 12px; align-items: flex-start; }
+  .col-idol  { flex: 2; min-width: 0; }
+  .col-ctrl  { width: 290px; flex-shrink: 0; }
+
+  h2 { margin: 0 0 9px; border-bottom: 1px solid #2e2e38; padding-bottom: 5px; font-size: 13px; color: #bbb; text-transform: uppercase; letter-spacing: .5px; }
+  .section { background: #222228; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+
+  input, button, textarea, select { font-size: 13px; padding: 6px 9px; border-radius: 6px; border: 1px solid #444; }
+  input, textarea, select { background: #2a2a30; color: #eee; }
+  button { background: #3a3a44; color: #eee; cursor: pointer; white-space: nowrap; }
+  button:hover { background: #4a4a56; }
+  button:disabled { opacity: .35; cursor: default; }
+  textarea { resize: vertical; width: 100%; }
+  .row { display: flex; gap: 6px; margin-bottom: 7px; flex-wrap: wrap; align-items: center; }
+  .hint { opacity: .45; font-size: 11px; margin: 1px 0 6px; }
+  .status { font-size: 12px; }
+  .ok  { color: #6fdc6f; } .bad { color: #e06666; }
+
+  /* tabs */
+  .tabs { display: flex; }
+  .tab-btn { padding: 4px 12px; border: 1px solid #444; border-bottom: none; border-radius: 6px 6px 0 0;
+             background: #1e1e26; color: #999; cursor: pointer; font-size: 12px; }
+  .tab-btn.on { background: #2e2e3a; color: #fff; font-weight: bold; }
+  .tab-body { border: 1px solid #444; border-radius: 0 6px 6px 6px; padding: 10px; margin-bottom: 10px; }
+  .tab-panel { display: none; }
+  .tab-panel.on { display: block; }
+
+  /* search */
+  #searchWrap { position: relative; margin-bottom: 8px; }
+  #searchInput { width: 100%; padding-right: 28px; }
+  #searchClear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+                 background: none; border: none; color: #888; cursor: pointer; font-size: 15px; padding: 0; }
+  #searchClear:hover { color: #eee; }
+
+  /* idol cards */
+  .idol-card { background: #2a2a34; border-radius: 8px; padding: 10px 12px; margin-bottom: 7px; transition: opacity .15s; }
+  .idol-card.active { outline: 2px solid #ffd54a; }
+  .idol-card.hidden { display: none; }
+  .idol-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 7px; }
+  .idol-rank { width: 24px; font-size: 16px; font-weight: bold; text-align: center; color: #999; flex-shrink:0; }
+  .idol-av { width: 38px; height: 38px; border-radius: 50%; background: #555; display: flex; align-items: center;
+             justify-content: center; font-weight: bold; font-size: 13px; flex-shrink:0;
+             border: 2px solid rgba(255,255,255,.2); background-size: cover; background-position: center; }
+  .idol-name  { font-weight: bold; font-size: 16px; flex: 1; }
+  .idol-score { color: #ffc371; font-weight: bold; font-size: 15px; }
+  .idol-bot { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+  .idol-bot input[type=number] { width: 85px; }
+  .idol-bar-bg { height: 4px; background: rgba(255,255,255,.1); border-radius: 2px; margin: 5px 0 0; overflow: hidden; }
+  .idol-bar-fill { height: 100%; background: linear-gradient(90deg,#ff5f6d,#ffc371); border-radius: 2px; transition: width .4s; }
+
+  /* gift box */
+  #giftBox { border-radius: 8px; padding: 10px; }
+  #giftBox.on  { background: #1a3a1a; border: 2px solid #6fdc6f; }
+  #giftBox.off { background: #252525; border: 2px solid #383838; }
+  #giftStatus  { font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 8px; }
+  #giftStatus.on  { color: #6fdc6f; }
+  #giftStatus.off { color: #666; }
+
+  /* timer */
+  #timerBig { font-size: 30px; font-weight: bold; text-align: center; margin: 4px 0 8px; letter-spacing: 2px; }
+  .timer-btns { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; margin-bottom: 6px; }
+
+  .btn-green  { background: #1e5c1e !important; border-color: #4caf50 !important; color: #8fef8f !important; }
+  .btn-green:hover  { background: #276b27 !important; }
+  .btn-red    { background: #5c1e1e !important; border-color: #e06666 !important; color: #ef9f9f !important; }
+  .btn-red:hover    { background: #6b2727 !important; }
+  .btn-yellow { background: #4a3a00 !important; border-color: #ffd54a !important; color: #ffe57a !important; }
+
+  /* overlay links */
+  .ov-links { display: flex; flex-direction: column; gap: 5px; }
+  .ov-link { font-size: 11px; background: #2a2a34; border-radius: 6px; padding: 6px 8px;
+             color: #7ec8e3; word-break: break-all; cursor: pointer; }
+  .ov-link:hover { background: #33333e; }
+  .ov-label { font-size: 10px; color: #888; margin-bottom: 2px; }
+
+  /* settings BXH */
+  .sp-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; font-size: 12px; }
+  .sp-row label { color: #ccc; min-width: 110px; }
+  .sp-row input[type=number] { width: 55px; padding: 4px 6px; }
+  .sp-row input[type=checkbox] { width: 14px; height: 14px; accent-color: #a07fff; cursor: pointer; }
+  .radio-grp { display: flex; gap: 10px; }
+  .radio-grp label { display: flex; align-items: center; gap: 4px; min-width: auto; cursor: pointer; }
+  .radio-grp input[type=radio] { accent-color: #a07fff; }
+  .sp-open-btn { font-size: 11px; color: #a07fff; background: none; border: 1px solid #a07fff;
+                 border-radius: 5px; padding: 3px 8px; cursor: pointer; }
+  .sp-open-btn:hover { background: #2a1f44; }
+
+  @media (max-width:700px) { .layout { flex-direction: column; } .col-ctrl { width: 100%; } }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ===== TRÁI: Idol ===== -->
+  <div class="col-idol">
+    <div class="section">
+      <h2>Idol</h2>
+
+      <!-- Search -->
+      <div id="searchWrap">
+        <input id="searchInput" placeholder="🔍 Tìm tên idol..." oninput="filterIdols(this.value)">
+        <button id="searchClear" onclick="clearSearch()" title="Xoá tìm kiếm">✕</button>
+      </div>
+
+      <!-- Add tabs -->
+      <div class="tabs">
+        <div class="tab-btn on"  onclick="switchTab('single')">Thêm 1</div>
+        <div class="tab-btn"     onclick="switchTab('batch')">Hàng loạt</div>
+      </div>
+      <div class="tab-body">
+        <div id="tab-single" class="tab-panel on">
+          <div class="row">
+            <input id="idolName" placeholder="Tên idol" style="flex:1;">
+            <button onclick="addIdol()">➕ Thêm</button>
+          </div>
+          <input id="idolAvatar" placeholder="Link ảnh avatar (tuỳ chọn)" style="width:100%;">
+        </div>
+        <div id="tab-batch" class="tab-panel">
+          <p class="hint">Mỗi tên một dòng. Tên trùng bị bỏ qua.</p>
+          <textarea id="batchNames" rows="5" placeholder="Idol A&#10;Idol B&#10;Idol C"></textarea>
+          <div class="row" style="margin-top:6px;margin-bottom:0;">
+            <button onclick="addBatch()">➕ Thêm tất cả</button>
+            <span id="batchStatus" class="status ok"></span>
+          </div>
+        </div>
+      </div>
+
+      <div id="idolList"></div>
+    </div>
+  </div>
+
+  <!-- ===== PHẢI: Điều khiển ===== -->
+  <div class="col-ctrl">
+
+    <!-- Kết nối -->
+    <div class="section">
+      <h2>Kết nối TikTok Live</h2>
+      <div class="row">
+        <input id="roomInput" placeholder="username (không @)" style="flex:1; min-width:0;">
+        <button onclick="connectRoom()">▶</button>
+        <button onclick="disconnectRoom()">✕</button>
+      </div>
+      <div id="connStatus" class="status">Chưa kết nối</div>
+    </div>
+
+    <!-- Nhận điểm -->
+    <div class="section">
+      <h2>Nhận điểm từ gift</h2>
+      <div id="giftBox" class="off">
+        <div id="giftStatus" class="off">⏸ Không nhận</div>
+        <div class="row" style="justify-content:center;margin-bottom:6px;">
+          <button id="btnAuto"   onclick="setMode('auto')"   class="btn-yellow" style="font-size:12px;">🤖 Tự động</button>
+          <button id="btnManual" onclick="setMode('manual')"                     style="font-size:12px;">👆 Thủ công</button>
+        </div>
+        <div id="manualBtns" class="row" style="justify-content:center;display:none;margin-bottom:0;">
+          <button id="btnGiftStart" onclick="giftsStart()" class="btn-green" style="font-size:12px;">▶ Bắt đầu</button>
+          <button id="btnGiftStop"  onclick="giftsStop()"  class="btn-red"   style="font-size:12px;">⏹ Dừng</button>
+        </div>
+        <p class="hint" id="modeHint" style="text-align:center;margin-bottom:0;">Tự động: theo timer.</p>
+      </div>
+    </div>
+
+    <!-- Timer -->
+    <div class="section">
+      <h2>Thời gian</h2>
+      <div class="row">
+        <input id="durMin" type="number" min="0" value="5" style="width:50px;"> phút
+        <input id="durSec" type="number" min="0" max="59" value="0" style="width:50px;"> giây
+        <button onclick="setDuration()">Đặt</button>
+      </div>
+      <div id="timerBig">--:--</div>
+      <div class="timer-btns">
+        <button onclick="post('/api/timer/start')"  class="btn-green">▶</button>
+        <button onclick="post('/api/timer/pause')"  >⏸</button>
+        <button onclick="post('/api/timer/reset')"  >⏮</button>
+        <button onclick="post('/api/timer/finish')" class="btn-red">⏹</button>
+      </div>
+      <div style="text-align:center;">
+        <button onclick="post('/api/reset_all')" style="font-size:12px;width:100%;">🔄 Reset tất cả điểm + giờ</button>
+      </div>
+    </div>
+
+    <!-- Settings BXH -->
+    <div class="section">
+      <h2 style="display:flex;justify-content:space-between;align-items:center;">
+        Cài đặt Bảng XH
+        <a href="/overlay/rank?settings=1" target="_blank" class="sp-open-btn">Mở overlay + settings ↗</a>
+      </h2>
+      <div class="sp-row">
+        <label>Thứ tự đa cột:</label>
+        <div class="radio-grp">
+          <label><input type="radio" name="spOrder" value="col" checked onchange="pushSettings()"> Dọc</label>
+          <label><input type="radio" name="spOrder" value="row"       onchange="pushSettings()"> Ngang</label>
+        </div>
+      </div>
+      <div class="sp-row">
+        <label>Tối đa mỗi cột:</label>
+        <input type="number" id="spPerCol" value="10" min="1" max="25" onchange="pushSettings()"> người
+      </div>
+      <div class="sp-row">
+        <label>Hiển thị:</label>
+        <label><input type="checkbox" id="spShowName" checked onchange="pushSettings()"> Tên</label>
+        <label><input type="checkbox" id="spShowScore" checked onchange="pushSettings()"> Điểm</label>
+      </div>
+      <div class="sp-row">
+        <label>Avatar:</label>
+        <div class="radio-grp">
+          <label><input type="radio" name="spAv" value="small"        onchange="pushSettings()"> Nhỏ</label>
+          <label><input type="radio" name="spAv" value="large" checked onchange="pushSettings()"> Lớn</label>
+          <label><input type="radio" name="spAv" value="none"         onchange="pushSettings()"> Ẩn</label>
+        </div>
+      </div>
+      <div class="sp-row">
+        <label>Phạm vi:</label>
+        TOP <input type="number" id="spFrom" value="1"  min="1" max="100" style="width:45px;" onchange="pushSettings()">
+        → TOP <input type="number" id="spTo"   value="40" min="1" max="100" style="width:45px;" onchange="pushSettings()">
+      </div>
+      <p class="hint">Settings được lưu trong URL overlay — mở lại overlay để áp dụng.</p>
+    </div>
+
+    <!-- OBS links -->
+    <div class="section">
+      <h2>OBS Browser Source</h2>
+      <div class="ov-links">
+        <div>
+          <div class="ov-label">📊 Bảng XH lưới (1280×720)</div>
+          <div class="ov-link" id="lnk-rank" onclick="copyLink('lnk-rank')">--</div>
+        </div>
+        <div>
+          <div class="ov-label">⏱ Widget idol + timer (580×150)</div>
+          <div class="ov-link" id="lnk-popup" onclick="copyLink('lnk-popup')">--</div>
+        </div>
+        <div>
+          <div class="ov-label">📋 Overlay danh sách</div>
+          <div class="ov-link" id="lnk-old" onclick="copyLink('lnk-old')">--</div>
+        </div>
+      </div>
+      <p class="hint" style="margin-top:5px;">Bấm để copy link.</p>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let state = null;
+let searchQ = "";
+
+// ---- utils ----
+function post(url, body) {
+  return fetch(url, { method:"POST", headers:{"Content-Type":"application/json"}, body: body!=null?JSON.stringify(body):undefined });
+}
+function fmtTime(sec) {
+  sec = Math.max(0, sec|0);
+  return String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0");
+}
+function copyLink(id) {
+  const t = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(t).then(()=>{
+    const el=document.getElementById(id); const old=el.textContent;
+    el.textContent="✔ Đã copy!"; setTimeout(()=>el.textContent=old,1500);
+  });
+}
+
+// ---- search ----
+function filterIdols(q) {
+  searchQ = q.trim().toLowerCase();
+  document.getElementById("searchClear").style.display = searchQ ? "block" : "none";
+  applyFilter();
+}
+function clearSearch() {
+  document.getElementById("searchInput").value = "";
+  filterIdols("");
+}
+function applyFilter() {
+  document.querySelectorAll(".idol-card").forEach(card => {
+    const name = (card.dataset.name || "").toLowerCase();
+    card.classList.toggle("hidden", searchQ !== "" && !name.includes(searchQ));
+  });
+}
+
+// ---- room ----
+function connectRoom()    { const id=document.getElementById("roomInput").value.trim(); if(id) post("/api/room",{unique_id:id}); }
+function disconnectRoom() { post("/api/room/disconnect"); }
+
+// ---- gift mode ----
+function setMode(m)   { post("/api/gifts/mode",{mode:m}); }
+function giftsStart() { post("/api/gifts/start"); }
+function giftsStop()  { post("/api/gifts/stop"); }
+
+// ---- timer ----
+function setDuration() {
+  const m=parseInt(document.getElementById("durMin").value||"0",10);
+  const s=parseInt(document.getElementById("durSec").value||"0",10);
+  post("/api/timer/duration",{seconds:m*60+s});
+}
+
+// ---- idol ----
+function switchTab(name) {
+  document.querySelectorAll(".tab-btn").forEach((b,i)=>b.classList.toggle("on",["single","batch"][i]===name));
+  document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("on"));
+  document.getElementById("tab-"+name).classList.add("on");
+}
+function addIdol() {
+  const name=document.getElementById("idolName").value.trim();
+  const avatar=document.getElementById("idolAvatar").value.trim();
+  if(!name) return;
+  post("/api/idol",{name,avatar}).then(()=>{ document.getElementById("idolName").value=""; document.getElementById("idolAvatar").value=""; });
+}
+function addBatch() {
+  const names=document.getElementById("batchNames").value.split("\n").map(s=>s.trim()).filter(Boolean);
+  if(!names.length) return;
+  post("/api/idol/batch",{names}).then(r=>r.json()).then(d=>{
+    document.getElementById("batchStatus").textContent="✔ Đã thêm "+d.added;
+    document.getElementById("batchNames").value="";
+    setTimeout(()=>document.getElementById("batchStatus").textContent="",3000);
+  });
+}
+function removeIdol(id,name){ if(confirm("Xoá "+name+"?")) fetch("/api/idol/"+id,{method:"DELETE"}); }
+function setActive(id)      { post("/api/idol/"+id+"/active"); }
+function resetIdol(id)      { post("/api/idol/"+id+"/reset"); }
+function addCustomPoints(id,inputId){
+  const val=parseInt(document.getElementById(inputId).value,10);
+  if(!val||isNaN(val)) return;
+  post("/api/idol/"+id+"/points",{delta:val});
+  document.getElementById(inputId).value="";
+}
+
+// ---- settings BXH → build overlay URL ----
+function pushSettings() {
+  const order    = document.querySelector('input[name="spOrder"]:checked').value;
+  const perCol   = document.getElementById("spPerCol").value;
+  const showName = document.getElementById("spShowName").checked ? "1":"0";
+  const showScore= document.getElementById("spShowScore").checked ? "1":"0";
+  const avSize   = document.querySelector('input[name="spAv"]:checked').value;
+  const topFrom  = document.getElementById("spFrom").value;
+  const topTo    = document.getElementById("spTo").value;
+  const params   = `?order=${order}&perCol=${perCol}&name=${showName}&score=${showScore}&av=${avSize}&from=${topFrom}&to=${topTo}`;
+  const rankUrl  = location.origin + "/overlay/rank" + params;
+  document.getElementById("lnk-rank").textContent = rankUrl;
+}
+
+// ---- render ----
+function initials(name){ return name.trim().slice(0,2).toUpperCase(); }
+const RANK_ICONS = ["👑","🥈","🥉"];
+
+function render(){
+  if(!state) return;
+
+  // connection
+  const cs=document.getElementById("connStatus");
+  if(state.connected){ cs.textContent="✔ Đã kết nối: "+state.room; cs.className="status ok"; }
+  else if(state.last_error){ cs.textContent="✘ "+state.last_error; cs.className="status bad"; }
+  else { cs.textContent=state.room?"Đang kết nối...":"Chưa kết nối"; cs.className="status"; }
+
+  // gift
+  const on=state.accepting_gifts;
+  document.getElementById("giftBox").className=on?"on":"off";
+  const gs=document.getElementById("giftStatus");
+  gs.className=on?"on":"off";
+  gs.textContent=on?"🟢 Đang nhận điểm":"⏸ Không nhận";
+  const isAuto=state.gift_mode==="auto";
+  document.getElementById("btnAuto").classList.toggle("btn-yellow",isAuto);
+  document.getElementById("btnManual").classList.toggle("btn-yellow",!isAuto);
+  document.getElementById("manualBtns").style.display=isAuto?"none":"flex";
+  document.getElementById("modeHint").textContent=isAuto?"Tự động: theo timer.":"Thủ công: bấm nút.";
+  document.getElementById("btnGiftStart").disabled=on;
+  document.getElementById("btnGiftStop").disabled=!on;
+
+  // timer
+  const t=state.timer;
+  document.getElementById("timerBig").textContent=fmtTime(t.remaining)+(t.running?" ▶":t.finished?" 🏁":"");
+
+  // idols sorted
+  const idols=[...state.idols].sort((a,b)=>b.score-a.score);
+  const maxScore=Math.max(1,...idols.map(i=>i.score));
+
+  const list=document.getElementById("idolList");
+  list.innerHTML="";
+  idols.forEach((idol,i)=>{
+    const inputId="pts_"+idol.id;
+    const card=document.createElement("div");
+    card.className="idol-card"+(idol.active?" active":"");
+    card.dataset.name=idol.name.toLowerCase();
+
+    const top=document.createElement("div"); top.className="idol-top";
+
+    const rankEl=document.createElement("div"); rankEl.className="idol-rank";
+    rankEl.textContent=i<3?RANK_ICONS[i]:i+1; top.appendChild(rankEl);
+
+    const av=document.createElement("div"); av.className="idol-av";
+    if(idol.avatar) av.style.backgroundImage=`url('${idol.avatar}')`;
+    else av.textContent=initials(idol.name);
+    top.appendChild(av);
+
+    const nameEl=document.createElement("div"); nameEl.className="idol-name";
+    nameEl.textContent=idol.name; top.appendChild(nameEl);
+
+    const scoreEl=document.createElement("div"); scoreEl.className="idol-score";
+    scoreEl.textContent=idol.score.toLocaleString()+" 💎"; top.appendChild(scoreEl);
+
+    const ab=document.createElement("button");
+    ab.textContent=idol.active?"★":"Chọn"; ab.style.fontSize="12px";
+    if(idol.active) ab.classList.add("btn-yellow");
+    ab.onclick=()=>setActive(idol.id); top.appendChild(ab);
+
+    const db=document.createElement("button"); db.textContent="✕"; db.classList.add("btn-red");
+    db.style.fontSize="12px";
+    db.onclick=()=>removeIdol(idol.id,idol.name); top.appendChild(db);
+
+    const barBg=document.createElement("div"); barBg.className="idol-bar-bg";
+    const barFill=document.createElement("div"); barFill.className="idol-bar-fill";
+    barFill.style.width=(idol.score/maxScore*100)+"%";
+    barBg.appendChild(barFill);
+
+    const bot=document.createElement("div"); bot.className="idol-bot";
+    [100,500,1000,5000].forEach(v=>{
+      const b=document.createElement("button"); b.textContent="+"+v; b.style.fontSize="12px";
+      b.onclick=()=>post("/api/idol/"+idol.id+"/points",{delta:v}); bot.appendChild(b);
+    });
+    const ci=document.createElement("input"); ci.type="number"; ci.id=inputId; ci.placeholder="Số khác";
+    ci.style.fontSize="12px";
+    ci.onkeydown=e=>{ if(e.key==="Enter") addCustomPoints(idol.id,inputId); };
+    const cb=document.createElement("button"); cb.textContent="Cộng"; cb.style.fontSize="12px";
+    cb.onclick=()=>addCustomPoints(idol.id,inputId);
+    const rb=document.createElement("button"); rb.textContent="Reset"; rb.style.fontSize="12px";
+    rb.onclick=()=>resetIdol(idol.id);
+    bot.appendChild(ci); bot.appendChild(cb); bot.appendChild(rb);
+
+    card.appendChild(top);
+    card.appendChild(barBg);
+    card.appendChild(bot);
+    list.appendChild(card);
+  });
+
+  // re-apply search filter after re-render
+  applyFilter();
+}
+
+function connect(){
+  const proto=location.protocol==="https:"?"wss":"ws";
+  const ws=new WebSocket(`${proto}://${location.host}/ws`);
+  ws.onmessage=ev=>{ const m=JSON.parse(ev.data); if(m.type==="state"){state=m.data;render();} };
+  ws.onclose=()=>setTimeout(connect,1500);
+}
+connect();
+
+// init overlay links
+const base=location.origin;
+document.getElementById("lnk-popup").textContent=base+"/overlay/popup";
+document.getElementById("lnk-old").textContent=base+"/overlay";
+document.getElementById("searchClear").style.display="none";
+pushSettings(); // build initial rank URL with defaults
+</script>
+</body>
+</html>
