@@ -8,10 +8,12 @@ Control panel:      http://YOUR_SERVER:8000/control
 import asyncio
 import json
 import uuid
+import os
+import secrets
 from typing import Optional
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import FileResponse
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, Response, Cookie
+from fastapi.responses import FileResponse, RedirectResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
@@ -20,6 +22,44 @@ from TikTokLive.events import ConnectEvent, DisconnectEvent, GiftEvent
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
+
+# --------------------------------------------------------------------------
+# Auth — đặt LOGIN_USER và LOGIN_PASS trong environment variable
+# Mặc định: admin / admin (đổi trước khi deploy!)
+# --------------------------------------------------------------------------
+LOGIN_USER = os.environ.get("LOGIN_USER", "admin")
+LOGIN_PASS = os.environ.get("LOGIN_PASS", "admin")
+# Lưu session token hợp lệ trong RAM
+valid_sessions: set[str] = set()
+
+def check_auth(session: Optional[str] = Cookie(default=None)) -> bool:
+    return session in valid_sessions if session else False
+
+LOGIN_PAGE = """<!DOCTYPE html>
+<html lang="vi">
+<head><meta charset="UTF-8"><title>Đăng nhập</title>
+<style>
+  * {{ box-sizing:border-box; margin:0; padding:0; }}
+  body {{ background:#1b1b1f; display:flex; align-items:center; justify-content:center; height:100vh; font-family:Arial,sans-serif; }}
+  .box {{ background:#222228; border-radius:12px; padding:36px 32px; width:320px; box-shadow:0 8px 32px rgba(0,0,0,.5); }}
+  h2 {{ color:#eee; margin-bottom:24px; text-align:center; font-size:20px; }}
+  input {{ width:100%; padding:10px 12px; margin-bottom:14px; background:#2a2a30; border:1px solid #444; border-radius:8px; color:#eee; font-size:14px; }}
+  button {{ width:100%; padding:11px; background:#7c5cbf; color:#fff; border:none; border-radius:8px; font-size:15px; font-weight:bold; cursor:pointer; }}
+  button:hover {{ background:#6a4bb0; }}
+  .err {{ color:#e06666; font-size:13px; text-align:center; margin-bottom:12px; }}
+</style></head>
+<body>
+<div class="box">
+  <h2>🔐 Đăng nhập</h2>
+  {error}
+  <form method="post" action="/login">
+    <input name="username" placeholder="Tên đăng nhập" autofocus>
+    <input name="password" type="password" placeholder="Mật khẩu">
+    <button type="submit">Đăng nhập</button>
+  </form>
+</div>
+</body></html>"""
+
 
 # --------------------------------------------------------------------------
 # In-memory state
@@ -185,6 +225,40 @@ async def timer_loop():
             await broadcast_state()
 
 
+from fastapi import status as http_status
+
+@app.middleware("http")
+async def auth_middleware(request: Request, call_next):
+    path = request.url.path
+    # Các path không cần auth
+    public = ["/login", "/overlay", "/static"]
+    if any(path == p or path.startswith(p+"/") for p in public):
+        return await call_next(request)
+    # WebSocket — check cookie header thủ công
+    if path == "/ws":
+        cookie_header = request.headers.get("cookie","")
+        token = None
+        for part in cookie_header.split(";"):
+            k,_,v = part.strip().partition("=")
+            if k == "session": token = v; break
+        if token not in valid_sessions:
+            from fastapi.responses import JSONResponse
+            return JSONResponse({"detail":"Unauthorized"}, status_code=401)
+        return await call_next(request)
+    # API paths
+    if path.startswith("/api/") or path.startswith("/overlay/") or path == "/control" or path == "/logout":
+        session = None
+        cookie_header = request.headers.get("cookie","")
+        for part in cookie_header.split(";"):
+            k,_,v = part.strip().partition("=")
+            if k.strip() == "session": session = v.strip(); break
+        if session not in valid_sessions:
+            if path.startswith("/api/"):
+                from fastapi.responses import JSONResponse
+                return JSONResponse({"detail":"Unauthorized"}, status_code=401)
+            return RedirectResponse("/login")
+    return await call_next(request)
+
 @app.on_event("startup")
 async def on_startup():
     asyncio.create_task(timer_loop())
@@ -194,21 +268,52 @@ async def on_startup():
 # Pages
 # --------------------------------------------------------------------------
 
+@app.get("/login")
+async def login_page():
+    return HTMLResponse(LOGIN_PAGE.format(error=""))
+
+@app.post("/login")
+async def login_submit(request: Request, response: Response):
+    form = await request.form()
+    u = form.get("username","").strip()
+    p = form.get("password","").strip()
+    if u == LOGIN_USER and p == LOGIN_PASS:
+        token = secrets.token_hex(32)
+        valid_sessions.add(token)
+        resp = RedirectResponse("/control", status_code=303)
+        resp.set_cookie("session", token, httponly=True, samesite="lax", max_age=60*60*24*30)
+        return resp
+    return HTMLResponse(LOGIN_PAGE.format(error='<p class="err">Sai tên đăng nhập hoặc mật khẩu</p>'), status_code=401)
+
+@app.get("/logout")
+async def logout(response: Response, session: Optional[str] = Cookie(default=None)):
+    if session in valid_sessions:
+        valid_sessions.discard(session)
+    resp = RedirectResponse("/login", status_code=303)
+    resp.delete_cookie("session")
+    return resp
+
 @app.get("/overlay")
 async def overlay_page():
     return FileResponse("static/overlay.html")
 
 @app.get("/overlay/rank")
-async def overlay_rank_page():
+async def overlay_rank_page(session: Optional[str] = Cookie(default=None)):
+    if not check_auth(session):
+        return RedirectResponse("/login")
     return FileResponse("static/overlay_rank.html")
 
 @app.get("/overlay/popup")
-async def overlay_popup_page():
+async def overlay_popup_page(session: Optional[str] = Cookie(default=None)):
+    if not check_auth(session):
+        return RedirectResponse("/login")
     return FileResponse("static/overlay_popup.html")
 
 
 @app.get("/control")
-async def control_page():
+async def control_page(session: Optional[str] = Cookie(default=None)):
+    if not check_auth(session):
+        return RedirectResponse("/login")
     return FileResponse("static/control.html")
 
 
@@ -458,6 +563,12 @@ async def api_gifts_stop():
 
 
 # --- Reset all ---
+
+@app.delete("/api/idol/all")
+async def api_clear_all_idols():
+    state["idols"] = []
+    await broadcast_state()
+    return {"ok": True}
 
 @app.post("/api/reset_all")
 async def api_reset_all():
