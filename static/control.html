@@ -118,12 +118,15 @@
 </style>
 </head>
 <body>
+<div style="position:fixed;top:8px;right:12px;z-index:9999;">
+  <a href="/logout" style="font-size:12px;color:#888;background:#2a2a30;border:1px solid #444;padding:4px 10px;border-radius:6px;text-decoration:none;">🚪 Đăng xuất</a>
+</div>
 <div class="layout">
 
   <!-- ===== TRÁI: List Idol ===== -->
   <div class="col-idol">
     <div class="section">
-      <h2>Idol</h2>
+      <h2 style="display:flex;justify-content:space-between;align-items:center;">Idol <button onclick="clearAllIdols()" class="btn-red" style="font-size:11px;padding:3px 9px;">🗑 Xoá tất cả</button></h2>
       <div id="idolList"></div>
     </div>
   </div>
@@ -370,6 +373,10 @@ function addBatch() {
     document.getElementById("batchNames").value="";
     setTimeout(()=>document.getElementById("batchStatus").textContent="",3000);
   });
+}
+function clearAllIdols(){
+  if(!confirm("Xoá TẤT CẢ idol? Không thể hoàn tác!")) return;
+  fetch("/api/idol/all",{method:"DELETE"});
 }
 function removeIdol(id,name){ if(confirm("Xoá "+name+"?")) fetch("/api/idol/"+id,{method:"DELETE"}); }
 function setActive(id)      { post("/api/idol/"+id+"/active"); }
