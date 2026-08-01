@@ -8,7 +8,6 @@ Control panel:      http://YOUR_SERVER:8000/control
 import asyncio
 import json
 import uuid
-import os
 from typing import Optional
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -21,8 +20,6 @@ from TikTokLive.events import ConnectEvent, DisconnectEvent, GiftEvent
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
-
-
 
 # --------------------------------------------------------------------------
 # In-memory state
@@ -196,6 +193,11 @@ async def on_startup():
 # --------------------------------------------------------------------------
 # Pages
 # --------------------------------------------------------------------------
+
+@app.get("/health")
+async def health():
+    return {"ok": True}
+
 
 @app.get("/overlay")
 async def overlay_page():
@@ -461,12 +463,6 @@ async def api_gifts_stop():
 
 
 # --- Reset all ---
-
-@app.delete("/api/idol/all")
-async def api_clear_all_idols():
-    state["idols"] = []
-    await broadcast_state()
-    return {"ok": True}
 
 @app.post("/api/reset_all")
 async def api_reset_all():
