@@ -380,9 +380,11 @@ async def api_set_score(idol_id: str, body: SetScoreIn):
 
 @app.post("/api/idol/{idol_id}/eliminate")
 async def api_eliminate(idol_id: str):
+    import time
     idol = get_idol(idol_id)
     if idol:
         idol["eliminated"] = True
+        idol["eliminated_at"] = time.time()  # timestamp để sort thứ tự OUT
         # nếu idol đang active thì chuyển active sang idol khác chưa bị loại
         if idol.get("active"):
             idol["active"] = False
@@ -397,6 +399,7 @@ async def api_revive(idol_id: str):
     idol = get_idol(idol_id)
     if idol:
         idol["eliminated"] = False
+        idol["eliminated_at"] = None  # reset khi hồi sinh
         await broadcast_state()
     return {"ok": True}
 
