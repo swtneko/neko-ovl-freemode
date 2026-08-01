@@ -124,6 +124,11 @@
     button { min-height: 34px; padding: 7px 11px; }
     .idol-bot input[type=number] { width: 78px; }
   }
+
+  /* Tránh iOS tự zoom khi focus input */
+  @media (max-width:750px) {
+    input, textarea, select { font-size: 16px !important; }
+  }
 </style>
 
 <!-- ============================================================ -->

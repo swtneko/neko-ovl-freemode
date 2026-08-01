@@ -197,7 +197,7 @@ function render() {
   const idol = state.idols ? state.idols.find(i => i.active) : null;
   const t = state.timer || { finished: false, remaining: 0, duration: 0 };
 
-  // 1. Cập nhật tên Idol (tự cuộn phải sang trái nếu tên dài)
+  // 1. Cập nhật tên Idol
   const nameMarqueeEl = document.getElementById("w-name-marquee");
   const currentName = idol ? idol.name.toUpperCase() : "---";
   if (nameMarqueeEl && nameMarqueeEl.dataset.mcaName !== currentName) {
@@ -205,29 +205,28 @@ function render() {
     mcaInitMarquee(nameMarqueeEl, currentName);
   }
 
-  // 2. Cập nhật Điểm số (Thuộc tính data-left hiển thị số điểm ở góc trái thanh)
-  const score = idol ? idol.score : 0;
+  // 2. Điểm phiên = score - session_base (server tự reset session_base khi bấm Start/Đặt giờ)
+  const totalScore = idol ? (idol.score || 0) : 0;
+  const sessionBase = idol ? (idol.session_base || 0) : 0;
+  const sessionScore = Math.max(0, totalScore - sessionBase);
+
   const barWrapEl = document.getElementById("w-bar-wrap");
   if (barWrapEl) {
-    barWrapEl.setAttribute("data-left", score.toLocaleString());
+    barWrapEl.setAttribute("data-left", sessionScore.toLocaleString());
   }
 
-  // 3. Cập nhật Đồng hồ / Trạng thái Hết giờ
+  // 3. Đồng hồ / trạng thái
   const timeBoxEl = document.getElementById("w-time-box");
-  const timerEl = document.getElementById("w-timer");
   const barEl = document.getElementById("w-bar");
 
   if (t.finished) {
-    // Thêm class 'success' của CSS gốc để đổi chữ thành "Thành công"
     timeBoxEl.classList.add("success");
     timeBoxEl.textContent = "Thành công";
     if (barEl) barEl.style.width = "100%";
   } else {
-    // Trở về trạng thái đếm ngược
     timeBoxEl.classList.remove("success");
     timeBoxEl.innerHTML = `<span id="w-timer">${fmtTime(t.remaining)}</span>`;
 
-    // Tính phần trăm thanh tiến trình
     const elapsed = t.duration - t.remaining;
     const pct = t.duration > 0 ? Math.min(100, (elapsed / t.duration) * 100) : 0;
     if (barEl) barEl.style.width = pct + "%";
