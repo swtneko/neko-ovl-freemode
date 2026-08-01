@@ -101,7 +101,23 @@
       justify-content: center;
       align-items: center;
     }
+
+    /* ===== Marquee cuộn tên dài (phải sang trái) ===== */
+    .mca-marquee-track { display: inline-flex; align-items: center; white-space: nowrap; animation: mcaMarqueeScroll linear infinite; will-change: transform; }
+    .mca-marquee-track .mca-gap { display: inline-block; width: 32px; flex-shrink: 0; }
+    @keyframes mcaMarqueeScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+    /* Khung marquee trong popup căn giữa theo chiều dọc, không bị đẩy lên trên */
+    #w-name-marquee { display: flex; align-items: center; width: 100%; height: 100%; overflow: hidden; }
   </style>
+
+  <!-- ============================================================ -->
+  <!-- 👇 DÁN CSS TÙY CHỈNH CỦA BẠN VÀO ĐÂY (sẽ đè lên CSS ở trên) 👇 -->
+  <!-- ============================================================ -->
+  <style id="custom-css">
+
+  </style>
+
 </head>
 <body>
 
@@ -112,9 +128,7 @@
       
       <!-- Thẻ tên Idol -->
       <div class="widget-freemode-nick">
-        <div class="marquee">
-          <div class="marquee-inner" id="w-name">---</div>
-        </div>
+        <div class="marquee" id="w-name-marquee"></div>
       </div>
 
       <!-- Thời gian đếm ngược hoặc chữ Thành công -->
@@ -141,16 +155,54 @@ function fmtTime(sec) {
   return `${m}:${s}`;
 }
 
+// Cuộn tên dài từ phải sang trái nếu tên bị tràn khỏi khung hiển thị
+function mcaInitMarquee(marqueeEl, text) {
+  if (!marqueeEl) return;
+  marqueeEl.innerHTML = "";
+  const probe = document.createElement("span");
+  probe.textContent = text;
+  probe.style.whiteSpace = "nowrap";
+  probe.style.display = "inline-block";
+  marqueeEl.appendChild(probe);
+  const boxWidth = marqueeEl.clientWidth;
+  const textWidth = probe.scrollWidth;
+  if (boxWidth > 0 && textWidth > boxWidth) {
+    marqueeEl.innerHTML = "";
+    const track = document.createElement("div");
+    track.className = "mca-marquee-track";
+    [1, 2].forEach(() => {
+      const span = document.createElement("span");
+      span.textContent = text;
+      const gap = document.createElement("span");
+      gap.className = "mca-gap";
+      track.appendChild(span);
+      track.appendChild(gap);
+    });
+    const speed = 28; // px/giây (chạy chậm & êm hơn)
+    const duration = Math.max(5, (textWidth + 32) / speed);
+    track.style.animationDuration = duration + "s";
+    marqueeEl.appendChild(track);
+  } else {
+    // Tên ngắn: giữ inline, căn giữa dọc qua flexbox của cha
+    probe.style.position = "static";
+    probe.style.top = "";
+    probe.style.left = "";
+    probe.style.transform = "";
+  }
+}
+
 function render() {
   if (!state) return;
 
   const idol = state.idols ? state.idols.find(i => i.active) : null;
   const t = state.timer || { finished: false, remaining: 0, duration: 0 };
 
-  // 1. Cập nhật tên Idol
-  const nameEl = document.getElementById("w-name");
-  if (nameEl) {
-    nameEl.textContent = idol ? idol.name.toUpperCase() : "---";
+  // 1. Cập nhật tên Idol (tự cuộn phải sang trái nếu tên dài)
+  const nameMarqueeEl = document.getElementById("w-name-marquee");
+  const currentName = idol ? idol.name.toUpperCase() : "---";
+  if (nameMarqueeEl && nameMarqueeEl.dataset.mcaName !== currentName) {
+    nameMarqueeEl.dataset.mcaName = currentName;
+    mcaInitMarquee(nameMarqueeEl, currentName);
   }
 
   // 2. Cập nhật Điểm số (Thuộc tính data-left hiển thị số điểm ở góc trái thanh)
@@ -201,6 +253,7 @@ function connect() {
   ws.onclose = () => setTimeout(connect, 1500);
 }
 
+mcaInitMarquee(document.getElementById("w-name-marquee"), "---");
 connect();
 </script>
 </body>

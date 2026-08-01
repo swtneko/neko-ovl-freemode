@@ -42,6 +42,38 @@
     display: flex; justify-content: center; align-items: center;
   }
 
+  /* ===== Marquee cuộn tên dài (phải sang trái) ===== */
+  .mca-marquee-track { display: inline-flex; align-items: center; white-space: nowrap; animation: mcaMarqueeScroll linear infinite; will-change: transform; }
+  .mca-marquee-track .mca-gap { display: inline-block; width: 32px; flex-shrink: 0; }
+  @keyframes mcaMarqueeScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+
+  /* ===== FIX 1: Tên ngắn (không cuộn) → lề trái thay vì căn giữa ===== */
+  /* Khung .marquee chứa probe span khi không cuộn */
+  .widget-mix-rank__name .marquee { display: flex; align-items: center; overflow: hidden; }
+  /* span tĩnh (khi tên ngắn) → về trái, không dùng absolute center */
+  .widget-mix-rank__name .marquee > span[style*="position: absolute"] {
+    position: static !important;
+    transform: none !important;
+    top: auto !important; left: auto !important;
+  }
+
+  /* ===== FIX 2: Popup - tên dài (marquee cuộn) vẫn căn giữa dọc ===== */
+  .widget-freemode-nick .marquee { display: flex; align-items: center; height: 100%; overflow: hidden; }
+  .widget-freemode-nick .mca-marquee-track { align-items: center; }
+
+  /* ===== FIX 3: Cột đơn (grid-cols-1) bị trong suốt khi có đúng N dòng ===== */
+  /* grid-multi xóa background của grid nhưng các li cần giữ background riêng */
+  .widget-mix-rank.grid-multi.grid-cols-1 .widget-mix-rank__grid > li {
+    background: linear-gradient(90deg, rgba(0,0,0,0.95) 0%, rgba(30,30,35,0.85) 100%);
+    border-radius: 6px;
+    border-right: none;
+  }
+  /* Đảm bảo container cột đơn multi-grid không bị trong suốt hoàn toàn */
+  .widget-mix-rank.grid-multi .widget-mix-rank__grid {
+    background: none;
+    box-shadow: none;
+  }
+
   /* ===== Settings Panel ===== */
   #settings-panel {
     display: none; position: fixed; inset: 0;
@@ -68,6 +100,14 @@
   input:checked + .slider:before { transform: translateX(20px); }
   .sp-hint { font-size: 11px; color: #ccc; margin-top: 2px; }
 </style>
+
+<!-- ============================================================ -->
+<!-- 👇 DÁN CSS TÙY CHỈNH CỦA BẠN VÀO ĐÂY (sẽ đè lên CSS ở trên) 👇 -->
+<!-- ============================================================ -->
+<style id="custom-css">
+
+</style>
+
 </head>
 <body>
 
@@ -121,6 +161,7 @@
 
 <script>
 let state = null;
+let rankElMap = new Map(); // idol.id -> { li, avEl, marqueeEl, scoreEl, nameBgEl, lastName, lastAvatar }
 
 // 1. Đọc tham số từ URL
 const urlParams = new URLSearchParams(window.location.search);
@@ -166,6 +207,7 @@ function render() {
 
   if (sliced.length === 0) {
     rankList.innerHTML = "";
+    rankElMap.clear();
     return;
   }
 
@@ -192,13 +234,13 @@ function render() {
   rankBox.classList.add(`av-${cfg.avSize}`);
 
   // ---------------------------------------------------------------
-  // BƯỚC 4: RENDER & TÍNH VỊ TRÍ HIỂN THỊ (GRID ROW/COLUMN)
+  // BƯỚC 4: CẬP NHẬT DOM — GIỮ NGUYÊN CÁC <li> ĐÃ CÓ (tránh giật marquee)
   // ---------------------------------------------------------------
-  rankList.innerHTML = "";
+  const seenIds = new Set();
 
   sliced.forEach((item, index) => {
     const { idol, globalRank } = item;
-    const li = document.createElement("li");
+    seenIds.add(idol.id);
 
     // Tính toán Tọa độ Hàng (row) & Cột (col) trong Grid CSS
     let r, c;
@@ -210,42 +252,118 @@ function render() {
       c = (index % numCols) + 1;
     }
 
+    let entry = rankElMap.get(idol.id);
+    if (!entry) {
+      // Idol mới xuất hiện trong danh sách -> tạo <li> mới
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <div class="avatar"></div>
+        <div class="widget-mix-rank__text">
+          <span class="widget-mix-rank__name" style="width: 110px;">
+            <div class="marquee"></div>
+          </span>
+          <span class="widget-mix-rank__score"></span>
+        </div>
+        <div class="widget-mix-rank__name-bg"></div>
+      `;
+      rankList.appendChild(li);
+      entry = {
+        li,
+        avEl: li.querySelector(".avatar"),
+        marqueeEl: li.querySelector(".marquee"),
+        scoreEl: li.querySelector(".widget-mix-rank__score"),
+        nameBgEl: li.querySelector(".widget-mix-rank__name-bg"),
+        lastName: null,
+        lastAvatar: undefined
+      };
+      rankElMap.set(idol.id, entry);
+    }
+
+    const li = entry.li;
     li.style.gridRow = `${r}`;
     li.style.gridColumn = `${c}`;
 
     let cls = "";
     if (idol.active) cls += "widget-mix-rank__item--current ";
     if (idol.eliminated) cls += "widget-mix-rank__item--disabled ";
-
-    // NẾU LÀ TOP 1 VÀ CÓ BẬT HIỂN THỊ ROUND -> THÊM CLASS VƯƠNG MIỆN
-    if (globalRank === 1 && cfg.showRound && !idol.eliminated) {
-      cls += "widget-mix-rank__item--has-round ";
-      li.setAttribute("data-round", "R1");
-    }
-
     li.className = cls.trim();
     li.setAttribute("data-rank", globalRank);
 
-    const avHtml = idol.avatar 
-      ? `<div class="avatar" style="background-image: url('${idol.avatar}'); background-size: cover;"></div>`
-      : `<div class="avatar"><span><em>${initials(idol.name)}</em></span></div>`;
+    // Avatar: chỉ cập nhật khi thay đổi
+    if (entry.lastAvatar !== idol.avatar) {
+      entry.lastAvatar = idol.avatar;
+      entry.avEl.outerHTML = idol.avatar
+        ? `<div class="avatar" style="background-image: url('${idol.avatar}'); background-size: cover;"></div>`
+        : `<div class="avatar"><span><em>${initials(idol.name)}</em></span></div>`;
+      entry.avEl = li.querySelector(".avatar");
+    }
 
-    li.innerHTML = `
-      ${avHtml}
-      <div class="widget-mix-rank__text">
-        <span class="widget-mix-rank__name" style="width: 110px;">
-          <div class="marquee">
-            <div class="marquee-inner">${idol.name}</div>
-          </div>
-        </span>
-        <span class="widget-mix-rank__score">${(Number(idol.score) || 0).toLocaleString()}</span>
-      </div>
-      <div class="widget-mix-rank__name-bg">${idol.name}</div>
-      ${idol.eliminated ? '<i class="widget-mix-rank__out">OUT</i>' : ''}
-    `;
+    // Điểm số: cập nhật mỗi lần (không đụng tới marquee tên)
+    entry.scoreEl.textContent = (Number(idol.score) || 0).toLocaleString();
+    entry.nameBgEl.textContent = idol.name;
 
-    rankList.appendChild(li);
+    // Tên: chỉ khởi tạo lại marquee khi tên thực sự đổi -> không bị giật khi điểm cuộn lên
+    if (entry.lastName !== idol.name) {
+      entry.lastName = idol.name;
+      mcaInitMarquee(entry.marqueeEl, idol.name);
+    }
+
+    // Badge OUT
+    const wantOut = !!idol.eliminated;
+    const outEl = li.querySelector(".widget-mix-rank__out");
+    if (wantOut && !outEl) {
+      const badge = document.createElement("i");
+      badge.className = "widget-mix-rank__out";
+      badge.textContent = "OUT";
+      li.appendChild(badge);
+    } else if (!wantOut && outEl) {
+      outEl.remove();
+    }
   });
+
+  // Dọn các idol không còn hiển thị (bị loại khỏi phạm vi TOP hoặc bị xoá)
+  for (const [id, entry] of rankElMap) {
+    if (!seenIds.has(id)) {
+      entry.li.remove();
+      rankElMap.delete(id);
+    }
+  }
+}
+
+// Cuộn tên dài từ phải sang trái nếu tên bị tràn khỏi khung hiển thị
+function mcaInitMarquee(marqueeEl, text) {
+  if (!marqueeEl) return;
+  marqueeEl.innerHTML = "";
+  const probe = document.createElement("span");
+  probe.textContent = text;
+  probe.style.whiteSpace = "nowrap";
+  probe.style.display = "inline-block";
+  marqueeEl.appendChild(probe);
+  const boxWidth = marqueeEl.clientWidth;
+  const textWidth = probe.scrollWidth;
+  if (boxWidth > 0 && textWidth > boxWidth) {
+    marqueeEl.innerHTML = "";
+    const track = document.createElement("div");
+    track.className = "mca-marquee-track";
+    [1, 2].forEach(() => {
+      const span = document.createElement("span");
+      span.textContent = text;
+      const gap = document.createElement("span");
+      gap.className = "mca-gap";
+      track.appendChild(span);
+      track.appendChild(gap);
+    });
+    const speed = 28; // px/giây (chạy chậm & êm hơn)
+    const duration = Math.max(5, (textWidth + 32) / speed);
+    track.style.animationDuration = duration + "s";
+    marqueeEl.appendChild(track);
+  } else {
+    // Tên ngắn: giữ nguyên inline, canh trái, canh giữa dọc qua flexbox cha
+    probe.style.position = "static";
+    probe.style.top = "";
+    probe.style.left = "";
+    probe.style.transform = "";
+  }
 }
 
 // Kết nối WebSocket

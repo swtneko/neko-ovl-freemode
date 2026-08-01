@@ -2,9 +2,11 @@
 <html lang="vi">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>Điều khiển Overlay</title>
 <style>
-  * { box-sizing: border-box; }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; }
   body { font-family: Arial, sans-serif; background: #1b1b1f; color: #eee; margin: 0; padding: 10px; }
 
   .layout { display: flex; gap: 12px; align-items: flex-start; }
@@ -114,8 +116,23 @@
   input:checked + .slider-sw { background-color: #9d73f7; }
   input:checked + .slider-sw:before { transform: translateX(18px); }
 
-  @media (max-width:750px) { .layout { flex-direction: column; } .col-ctrl { position: static; max-height: none; } }
+  /* Ngăn trình duyệt mobile tự zoom khi bấm vào ô nhập liệu (yêu cầu font-size tối thiểu 16px) */
+  @media (max-width:750px) {
+    .layout { flex-direction: column; }
+    .col-ctrl { position: static; max-height: none; }
+    input, textarea, select { font-size: 16px !important; }
+    button { min-height: 34px; padding: 7px 11px; }
+    .idol-bot input[type=number] { width: 78px; }
+  }
 </style>
+
+<!-- ============================================================ -->
+<!-- 👇 DÁN CSS TÙY CHỈNH CỦA BẠN VÀO ĐÂY (sẽ đè lên CSS ở trên) 👇 -->
+<!-- ============================================================ -->
+<style id="custom-css">
+
+</style>
+
 </head>
 <body>
 <div class="layout">
@@ -123,7 +140,7 @@
   <!-- ===== TRÁI: List Idol ===== -->
   <div class="col-idol">
     <div class="section">
-      <h2 style="display:flex;justify-content:space-between;align-items:center;">Idol <button onclick="clearAllIdols()" class="btn-red" style="font-size:11px;padding:3px 9px;">🗑 Xoá tất cả</button></h2>
+      <h2>Idol</h2>
       <div id="idolList"></div>
     </div>
   </div>
@@ -370,10 +387,6 @@ function addBatch() {
     document.getElementById("batchNames").value="";
     setTimeout(()=>document.getElementById("batchStatus").textContent="",3000);
   });
-}
-function clearAllIdols(){
-  if(!confirm("Xoá TẤT CẢ idol? Không thể hoàn tác!")) return;
-  fetch("/api/idol/all",{method:"DELETE"});
 }
 function removeIdol(id,name){ if(confirm("Xoá "+name+"?")) fetch("/api/idol/"+id,{method:"DELETE"}); }
 function setActive(id)      { post("/api/idol/"+id+"/active"); }
