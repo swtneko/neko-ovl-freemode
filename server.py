@@ -317,6 +317,25 @@ async def api_add_batch(body: BatchIdolIn):
         await broadcast_state()
     return {"added": len(added)}
 
+@app.delete("/api/idol/all")
+async def api_delete_all_idols():
+    state["idols"] = []
+    await broadcast_state()
+    return {"ok": True}
+
+class BulkDeleteIn(BaseModel):
+    ids: list[str]
+
+@app.post("/api/idol/bulk_delete")
+async def api_bulk_delete(body: BulkDeleteIn):
+    id_set = set(body.ids)
+    state["idols"] = [i for i in state["idols"] if i["id"] not in id_set]
+    if state["idols"] and not any(i["active"] for i in state["idols"]):
+        state["idols"][0]["active"] = True
+    await broadcast_state()
+    return {"ok": True}
+
+
 @app.delete("/api/idol/{idol_id}")
 async def api_remove_idol(idol_id: str):
     state["idols"] = [i for i in state["idols"] if i["id"] != idol_id]
