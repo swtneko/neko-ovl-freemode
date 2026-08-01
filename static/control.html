@@ -519,8 +519,10 @@ function render(){
   const t=state.timer;
   document.getElementById("timerBig").textContent=fmtTime(t.remaining)+(t.running?" ▶":t.finished?" 🏁":"");
 
-  // idols sorted
-  const idols=[...state.idols].sort((a,b)=>b.score-a.score);
+  // idols sorted: không OUT → điểm cao trước | OUT → bị out trước xếp cao hơn
+  const _active = [...state.idols].filter(i=>!i.eliminated).sort((a,b)=>b.score-a.score);
+  const _ousted = [...state.idols].filter(i=> i.eliminated).sort((a,b)=>(b.eliminated_at||0)-(a.eliminated_at||0));
+  const idols   = [..._active, ..._ousted];
   const maxScore=Math.max(1,...idols.map(i=>i.score));
 
   const list=document.getElementById("idolList");

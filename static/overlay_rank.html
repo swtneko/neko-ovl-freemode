@@ -197,9 +197,11 @@ function render() {
   app.style.display = "flex";
 
   // ---------------------------------------------------------------
-  // BƯỚC 1: SẮP XẾP BẮT BUỘC ĐIỂM CAO ĐẾN THẤP & CẮT THEO PHẠM VI TOP
+  // BƯỚC 1: SẮP XẾP — Không OUT: điểm cao → thấp | OUT: bị out trước xếp cao hơn
   // ---------------------------------------------------------------
-  let sortedAll = [...state.idols].sort((a, b) => (Number(b.score) || 0) - (Number(a.score) || 0));
+  const active   = state.idols.filter(i => !i.eliminated).sort((a, b) => (Number(b.score) || 0) - (Number(a.score) || 0));
+  const ousted   = state.idols.filter(i =>  i.eliminated).sort((a, b) => (b.eliminated_at || 0) - (a.eliminated_at || 0));
+  let sortedAll  = [...active, ...ousted];
 
   let sliced = sortedAll
     .map((idol, index) => ({ idol, globalRank: index + 1 }))
