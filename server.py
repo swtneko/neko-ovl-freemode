@@ -17,6 +17,10 @@ from pydantic import BaseModel
 
 from TikTokLive import TikTokLiveClient
 from TikTokLive.events import ConnectEvent, DisconnectEvent, GiftEvent
+import logging
+
+# Suppress lỗi CompetitionEvent parse từ thư viện TikTokLive (bug của thư viện, không ảnh hưởng gift)
+logging.getLogger("TikTokLive").setLevel(logging.CRITICAL)
 
 app = FastAPI()
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -406,6 +410,11 @@ async def api_revive(idol_id: str):
 
 # --- Timer ---
 
+def reset_session_scores():
+    """Chụp điểm hiện tại của mỗi idol làm base → popup hiển thị từ 0"""
+    for i in state["idols"]:
+        i["session_base"] = i.get("score", 0)
+
 @app.post("/api/timer/duration")
 async def api_set_duration(body: DurationIn):
     t = state["timer"]
@@ -413,6 +422,8 @@ async def api_set_duration(body: DurationIn):
     t["remaining"] = body.seconds
     t["running"] = False
     t["finished"] = False
+    state["accepting_gifts"] = False
+    reset_session_scores()
     await broadcast_state()
     return {"ok": True}
 
@@ -423,6 +434,7 @@ async def api_timer_start():
         t["remaining"] = t["duration"]
     t["running"] = True
     t["finished"] = False
+    reset_session_scores()
     # Chế độ auto: bấm Start timer → tự bật nhận điểm
     if state["gift_mode"] == "auto":
         state["accepting_gifts"] = True
@@ -474,6 +486,7 @@ async def api_set_gift_mode(body: ModeIn):
 @app.post("/api/gifts/start")
 async def api_gifts_start():
     state["accepting_gifts"] = True
+    reset_session_scores()
     await broadcast_state()
     return {"ok": True}
 
