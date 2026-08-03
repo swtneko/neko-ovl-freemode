@@ -9,14 +9,15 @@
   html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; }
   body { font-family: Arial, sans-serif; background: #1b1b1f; color: #eee; margin: 0; padding: 10px; }
 
-  .layout { display: flex; gap: 12px; align-items: flex-start; }
+  /* Bắt buộc 2 cột luôn nằm ngang */
+  .layout { display: flex; gap: 10px; align-items: flex-start; flex-direction: row !important; }
   .col-idol  { flex: 1; min-width: 0; }
   .col-ctrl  { flex: 1; min-width: 0; position: sticky; top: 0; max-height: 100vh; overflow-y: auto; }
 
   h2 { margin: 0 0 9px; border-bottom: 1px solid #2e2e38; padding-bottom: 5px; font-size: 13px; color: #bbb; text-transform: uppercase; letter-spacing: .5px; }
   .section { background: #222228; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
 
-  input, button, textarea, select { font-size: 13px; padding: 6px 9px; border-radius: 6px; border: 1px solid #444; }
+  input, button, textarea, select { font-size: 12px; padding: 6px 8px; border-radius: 6px; border: 1px solid #444; }
   input, textarea, select { background: #2a2a30; color: #eee; }
   button { background: #3a3a44; color: #eee; cursor: pointer; white-space: nowrap; }
   button:hover { background: #4a4a56; }
@@ -27,12 +28,17 @@
   .status { font-size: 12px; }
   .ok  { color: #6fdc6f; } .bad { color: #e06666; }
 
+  /* Language Selector Switcher */
+  .lang-switcher { display: flex; gap: 4px; background: #1a1a20; padding: 2px; border-radius: 6px; border: 1px solid #3a3a44; }
+  .lang-btn { font-size: 10px; padding: 2px 6px; border-radius: 4px; border: none; background: transparent; color: #888; cursor: pointer; }
+  .lang-btn.active { background: #7c5cbf; color: #fff; font-weight: bold; }
+
   /* tabs */
   .tabs { display: flex; }
-  .tab-btn { padding: 4px 12px; border: 1px solid #444; border-bottom: none; border-radius: 6px 6px 0 0;
-             background: #1e1e26; color: #999; cursor: pointer; font-size: 12px; }
+  .tab-btn { padding: 4px 10px; border: 1px solid #444; border-bottom: none; border-radius: 6px 6px 0 0;
+             background: #1e1e26; color: #999; cursor: pointer; font-size: 11px; }
   .tab-btn.on { background: #2e2e3a; color: #fff; font-weight: bold; }
-  .tab-body { border: 1px solid #444; border-radius: 0 6px 6px 6px; padding: 10px; margin-bottom: 10px; }
+  .tab-body { border: 1px solid #444; border-radius: 0 6px 6px 6px; padding: 8px; margin-bottom: 10px; }
   .tab-panel { display: none; }
   .tab-panel.on { display: block; }
 
@@ -44,38 +50,38 @@
   #searchClear:hover { color: #eee; }
 
   /* idol cards */
-  .idol-card { background: #2a2a34; border-radius: 8px; padding: 10px 12px; margin-bottom: 7px; transition: opacity .15s; }
+  .idol-card { background: #2a2a34; border-radius: 8px; padding: 8px 10px; margin-bottom: 7px; transition: opacity .15s; }
   .idol-card.active { outline: 2px solid #ffd54a; }
   .idol-card.hidden { display: none; }
   .idol-card.eliminated { opacity: 0.45; background: #28202a; }
-  .out-badge { background: #e06666; color: #fff; font-size: 10px; font-weight: bold; border-radius: 4px; padding: 1px 5px; letter-spacing: 1px; flex-shrink: 0; }
+  .out-badge { background: #e06666; color: #fff; font-size: 10px; font-weight: bold; border-radius: 4px; padding: 1px 4px; letter-spacing: 1px; flex-shrink: 0; }
   .btn-orange { background: #5a2e00 !important; border-color: #f0883e !important; color: #ffc07a !important; }
   .btn-orange:hover { background: #6b3800 !important; }
   .btn-teal   { background: #004a3a !important; border-color: #00bfa5 !important; color: #7fffd4 !important; }
   .btn-teal:hover   { background: #005a46 !important; }
-  .idol-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 7px; }
-  .idol-rank { width: 24px; font-size: 16px; font-weight: bold; text-align: center; color: #999; flex-shrink:0; }
-  .idol-av { width: 38px; height: 38px; border-radius: 50%; background: #555; display: flex; align-items: center;
-             justify-content: center; font-weight: bold; font-size: 13px; flex-shrink:0;
+  .idol-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 5px; }
+  .idol-rank { width: 20px; font-size: 14px; font-weight: bold; text-align: center; color: #999; flex-shrink:0; }
+  .idol-av { width: 32px; height: 32px; border-radius: 50%; background: #555; display: flex; align-items: center;
+             justify-content: center; font-weight: bold; font-size: 12px; flex-shrink:0;
              border: 2px solid rgba(255,255,255,.2); background-size: cover; background-position: center; }
-  .idol-name  { font-weight: bold; font-size: 16px; flex: 1; }
-  .idol-score { color: #ffc371; font-weight: bold; font-size: 15px; }
-  .idol-bot { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
-  .idol-bot input[type=number] { width: 85px; }
+  .idol-name  { font-weight: bold; font-size: 14px; flex: 1; word-break: break-word; }
+  .idol-score { color: #ffc371; font-weight: bold; font-size: 13px; }
+  .idol-bot { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; margin-top: 5px; }
+  .idol-bot input[type=number] { width: 65px; }
   .idol-bar-bg { height: 4px; background: rgba(255,255,255,.1); border-radius: 2px; margin: 5px 0 0; overflow: hidden; }
   .idol-bar-fill { height: 100%; background: linear-gradient(90deg,#ff5f6d,#ffc371); border-radius: 2px; transition: width .4s; }
 
   /* gift box */
-  #giftBox { border-radius: 8px; padding: 10px; }
+  #giftBox { border-radius: 8px; padding: 8px; }
   #giftBox.on  { background: #1a3a1a; border: 2px solid #6fdc6f; }
   #giftBox.off { background: #252525; border: 2px solid #383838; }
-  #giftStatus  { font-size: 14px; font-weight: bold; text-align: center; margin-bottom: 8px; }
+  #giftStatus  { font-size: 13px; font-weight: bold; text-align: center; margin-bottom: 6px; }
   #giftStatus.on  { color: #6fdc6f; }
   #giftStatus.off { color: #666; }
 
   /* timer */
-  #timerBig { font-size: 30px; font-weight: bold; text-align: center; margin: 4px 0 8px; letter-spacing: 2px; }
-  .timer-btns { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; margin-bottom: 6px; }
+  #timerBig { font-size: 24px; font-weight: bold; text-align: center; margin: 4px 0 6px; letter-spacing: 1px; }
+  .timer-btns { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; margin-bottom: 6px; }
 
   .btn-green  { background: #1e5c1e !important; border-color: #4caf50 !important; color: #8fef8f !important; }
   .btn-green:hover  { background: #276b27 !important; }
@@ -83,61 +89,52 @@
   .btn-red:hover    { background: #6b2727 !important; }
   .btn-yellow { background: #4a3a00 !important; border-color: #ffd54a !important; color: #ffe57a !important; }
 
-  /* overlay links */
-  .ov-links { display: flex; flex-direction: column; gap: 5px; }
-  .ov-link { font-size: 11px; background: #2a2a34; border-radius: 6px; padding: 6px 8px;
+  /* overlay links & badges */
+  .ov-links { display: flex; flex-direction: column; gap: 8px; }
+  .ov-link { font-size: 10px; background: #2a2a34; border-radius: 6px; padding: 5px 6px;
              color: #7ec8e3; word-break: break-all; cursor: pointer; }
   .ov-link:hover { background: #33333e; }
-  .ov-label { font-size: 10px; color: #888; margin-bottom: 2px; }
+  .ov-label { font-size: 11px; color: #888; margin-bottom: 3px; display: flex; align-items: center; justify-content: space-between; }
+  .dim-badge { background: #3a3a48; color: #ffc371; border: 1px solid #5a5a6e; font-size: 10px; padding: 1px 5px; border-radius: 4px; font-family: monospace; }
 
-  /* ===== MCASTAR STYLE SETTINGS BOX ===== */
-  .sp-box { background: #2a2a34; border-radius: 8px; overflow: hidden; font-size: 13px; }
-  .sp-header { background: #7c5cbf; padding: 10px 14px; font-weight: bold; color: #fff; display: flex; justify-content: space-between; align-items: center; }
-  .sp-body { padding: 12px; }
-  .sp-title-sec { color: #aaa; font-size: 12px; font-weight: bold; margin: 12px 0 6px 0; }
+  /* MCASTAR STYLE SETTINGS BOX */
+  .sp-box { background: #2a2a34; border-radius: 8px; overflow: hidden; font-size: 12px; }
+  .sp-header { background: #7c5cbf; padding: 8px 10px; font-weight: bold; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+  .sp-body { padding: 10px; }
+  .sp-title-sec { color: #aaa; font-size: 11px; font-weight: bold; margin: 10px 0 5px 0; }
   .sp-title-sec:first-child { margin-top: 0; }
-  .sp-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
-  .sp-row label { color: #ddd; min-width: 115px; }
-  .sp-row input[type=number] { width: 60px; padding: 4px 6px; border-radius: 4px; }
-  .sp-row input[type=text] { border-radius: 4px; padding: 4px 8px; }
-  .sp-row input[type=checkbox] { width: 15px; height: 15px; accent-color: #7c5cbf; cursor: pointer; }
-  .radio-grp { display: flex; gap: 12px; }
-  .radio-grp label { display: flex; align-items: center; gap: 4px; min-width: auto; cursor: pointer; }
+  .sp-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
+  .sp-row label { color: #ddd; min-width: 90px; }
+  .sp-row input[type=number] { width: 50px; padding: 3px 5px; border-radius: 4px; }
+  .sp-row input[type=text] { border-radius: 4px; padding: 3px 6px; }
+  .sp-row input[type=checkbox] { width: 14px; height: 14px; accent-color: #7c5cbf; cursor: pointer; }
+  .radio-grp { display: flex; gap: 8px; }
+  .radio-grp label { display: flex; align-items: center; gap: 3px; min-width: auto; cursor: pointer; }
   .radio-grp input[type=radio] { accent-color: #7c5cbf; cursor: pointer; }
-  .btn-purple { background: #7c5cbf; color: #fff; border: none; font-size: 12px; padding: 5px 10px; border-radius: 5px; }
-  .btn-purple:hover { background: #6a4bb0; }
-  .btn-gray { background: #4a4a56; color: #fff; border: none; font-size: 12px; padding: 5px 10px; border-radius: 5px; }
+  .btn-purple { background: #7c5cbf; color: #fff; border: none; font-size: 11px; padding: 4px 8px; border-radius: 4px; }
 
   /* Toggle Switch */
-  .switch { position: relative; display: inline-block; width: 38px; height: 20px; }
+  .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
   .switch input { opacity: 0; width: 0; height: 0; }
   .slider-sw { position: absolute; cursor: pointer; inset: 0; background-color: #555; transition: .3s; border-radius: 20px; }
-  .slider-sw:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+  .slider-sw:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
   input:checked + .slider-sw { background-color: #9d73f7; }
-  input:checked + .slider-sw:before { transform: translateX(18px); }
+  input:checked + .slider-sw:before { transform: translateX(16px); }
 
-  /* Ngăn trình duyệt mobile tự zoom khi bấm vào ô nhập liệu (yêu cầu font-size tối thiểu 16px) */
-  @media (max-width:750px) {
-    .layout { flex-direction: column; }
-    .col-ctrl { position: static; max-height: none; }
-    input, textarea, select { font-size: 16px !important; }
-    button { min-height: 34px; padding: 7px 11px; }
-    .idol-bot input[type=number] { width: 78px; }
-  }
-
-  /* Tránh iOS tự zoom khi focus input */
-  @media (max-width:750px) {
-    input, textarea, select { font-size: 16px !important; }
+  /* Tối ưu riêng cho Màn hình điện thoại dọc */
+  @media (max-width: 750px) {
+    body { padding: 4px; }
+    .layout { gap: 6px !important; }
+    .section { padding: 8px !important; margin-bottom: 6px !important; }
+    h2 { font-size: 11px !important; margin-bottom: 6px !important; }
+    input, button, textarea, select { font-size: 11px !important; padding: 4px 6px !important; }
+    .idol-card { padding: 6px 8px !important; }
+    .idol-name { font-size: 13px !important; }
+    .idol-score { font-size: 12px !important; }
+    .idol-bot input[type=number] { width: 50px !important; }
+    .sp-row label { min-width: 80px !important; }
   }
 </style>
-
-<!-- ============================================================ -->
-<!-- 👇 DÁN CSS TÙY CHỈNH CỦA BẠN VÀO ĐÂY (sẽ đè lên CSS ở trên) 👇 -->
-<!-- ============================================================ -->
-<style id="custom-css">
-
-</style>
-
 </head>
 <body>
 <div class="layout">
@@ -145,19 +142,16 @@
   <!-- ===== TRÁI: List Idol ===== -->
   <div class="col-idol">
     <div class="section">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:8px;flex-wrap:wrap;">
-        <h2 style="margin:0;">Idol</h2>
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
-          <!-- Nút bật chế độ chọn -->
-          <button id="btnSelectMode" onclick="toggleSelectMode()" style="font-size:12px;background:#444;color:#eee;border:1px solid #666;">☑ Chọn để xóa</button>
-          <!-- Các nút chỉ hiện khi đang ở chế độ chọn -->
-          <span id="selectActions" style="display:none;gap:6px;display:none;">
-            <button onclick="selectAll()" style="font-size:12px;background:#333;color:#ccc;border:1px solid #555;">Chọn tất</button>
-            <button onclick="deselectAll()" style="font-size:12px;background:#333;color:#ccc;border:1px solid #555;">Bỏ chọn</button>
-            <button id="btnDeleteSelected" onclick="deleteSelected()" style="font-size:12px;" class="btn-red">🗑 Xóa đã chọn</button>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:6px;flex-wrap:wrap;">
+        <h2 style="margin:0;" data-i18n="idol_title">Idol</h2>
+        <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
+          <button id="btnSelectMode" onclick="toggleSelectMode()" style="font-size:11px;background:#444;color:#eee;border:1px solid #666;" data-i18n="select_btn">☑ Chọn</button>
+          <span id="selectActions" style="display:none;gap:4px;">
+            <button onclick="selectAll()" style="font-size:11px;background:#333;color:#ccc;border:1px solid #555;" data-i18n="select_all">Tất</button>
+            <button onclick="deselectAll()" style="font-size:11px;background:#333;color:#ccc;border:1px solid #555;" data-i18n="deselect">Bỏ</button>
+            <button id="btnDeleteSelected" onclick="deleteSelected()" style="font-size:11px;" class="btn-red" data-i18n="del_selected">🗑 Xóa chọn</button>
           </span>
-          <!-- Xóa tất cả luôn hiển thị -->
-          <button onclick="deleteAllIdols()" style="font-size:12px;" class="btn-red">🗑 Xóa tất</button>
+          <button onclick="deleteAllIdols()" style="font-size:11px;" class="btn-red" data-i18n="del_all">🗑 Xóa tất</button>
         </div>
       </div>
       <div id="idolList"></div>
@@ -169,30 +163,36 @@
 
     <!-- Search + Thêm idol -->
     <div class="section">
-      <h2>Thêm Idol</h2>
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid #2e2e38; padding-bottom: 5px; margin-bottom: 9px;">
+        <h2 style="margin:0; border:none; padding:0;" data-i18n="add_idol_title">Thêm Idol</h2>
+        <div class="lang-switcher">
+          <button class="lang-btn active" id="lang-vi" onclick="setLang('vi')">VN</button>
+          <button class="lang-btn" id="lang-en" onclick="setLang('en')">EN</button>
+        </div>
+      </div>
 
       <div id="searchWrap">
-        <input id="searchInput" placeholder="🔍 Tìm tên idol..." oninput="filterIdols(this.value)">
+        <input id="searchInput" placeholder="🔍 Tìm idol..." data-i18n-ph="search_ph" oninput="filterIdols(this.value)">
         <button id="searchClear" onclick="clearSearch()" title="Xoá tìm kiếm">✕</button>
       </div>
 
       <div class="tabs">
-        <div class="tab-btn on"  onclick="switchTab('single')">Thêm 1</div>
-        <div class="tab-btn"     onclick="switchTab('batch')">Hàng loạt</div>
+        <div class="tab-btn on"  onclick="switchTab('single')" data-i18n="tab_single">Thêm 1</div>
+        <div class="tab-btn"     onclick="switchTab('batch')" data-i18n="tab_batch">Hàng loạt</div>
       </div>
       <div class="tab-body">
         <div id="tab-single" class="tab-panel on">
           <div class="row">
-            <input id="idolName" placeholder="Tên idol" style="flex:1;">
-            <button onclick="addIdol()">➕ Thêm</button>
+            <input id="idolName" placeholder="Tên idol" data-i18n-ph="idol_name_ph" style="flex:1; min-width: 0;">
+            <button onclick="addIdol()" data-i18n="btn_add">➕ Thêm</button>
           </div>
-          <input id="idolAvatar" placeholder="Link ảnh avatar (tuỳ chọn)" style="width:100%;">
+          <input id="idolAvatar" placeholder="Link ảnh avatar (tuỳ chọn)" data-i18n-ph="avatar_ph" style="width:100%;">
         </div>
         <div id="tab-batch" class="tab-panel">
-          <p class="hint">Mỗi tên một dòng. Tên trùng bị bỏ qua.</p>
-          <textarea id="batchNames" rows="5" placeholder="Idol A&#10;Idol B&#10;Idol C"></textarea>
+          <p class="hint" data-i18n="batch_hint">Mỗi tên một dòng.</p>
+          <textarea id="batchNames" rows="4" placeholder="Idol A&#10;Idol B" data-i18n-ph="batch_ph"></textarea>
           <div class="row" style="margin-top:6px;margin-bottom:0;">
-            <button onclick="addBatch()">➕ Thêm tất cả</button>
+            <button onclick="addBatch()" data-i18n="btn_add_batch">➕ Thêm tất cả</button>
             <span id="batchStatus" class="status ok"></span>
           </div>
         </div>
@@ -201,9 +201,9 @@
 
     <!-- Kết nối -->
     <div class="section">
-      <h2>Kết nối TikTok Live</h2>
+      <h2 data-i18n="tiktok_title">TikTok Live</h2>
       <div class="row">
-        <input id="roomInput" placeholder="username (không @)" style="flex:1; min-width:0;">
+        <input id="roomInput" placeholder="username" style="flex:1; min-width:0;">
         <button onclick="connectRoom()">▶</button>
         <button onclick="disconnectRoom()">✕</button>
       </div>
@@ -212,28 +212,27 @@
 
     <!-- Nhận điểm -->
     <div class="section">
-      <h2>Nhận điểm từ gift</h2>
+      <h2 data-i18n="gift_title">Nhận điểm Gift</h2>
       <div id="giftBox" class="off">
         <div id="giftStatus" class="off">⏸ Không nhận</div>
         <div class="row" style="justify-content:center;margin-bottom:6px;">
-          <button id="btnAuto"   onclick="setMode('auto')"   class="btn-yellow" style="font-size:12px;">🤖 Tự động</button>
-          <button id="btnManual" onclick="setMode('manual')"                     style="font-size:12px;">👆 Thủ công</button>
+          <button id="btnAuto"   onclick="setMode('auto')"   class="btn-yellow" style="font-size:11px;" data-i18n="auto_mode">🤖 Tự động</button>
+          <button id="btnManual" onclick="setMode('manual')"                     style="font-size:11px;" data-i18n="manual_mode">👆 Thủ công</button>
         </div>
         <div id="manualBtns" class="row" style="justify-content:center;display:none;margin-bottom:0;">
-          <button id="btnGiftStart" onclick="giftsStart()" class="btn-green" style="font-size:12px;">▶ Bắt đầu</button>
-          <button id="btnGiftStop"  onclick="giftsStop()"  class="btn-red"   style="font-size:12px;">⏹ Dừng</button>
+          <button id="btnGiftStart" onclick="giftsStart()" class="btn-green" style="font-size:11px;" data-i18n="btn_start">▶ Bắt đầu</button>
+          <button id="btnGiftStop"  onclick="giftsStop()"  class="btn-red"   style="font-size:11px;" data-i18n="btn_stop">⏹ Dừng</button>
         </div>
-        <p class="hint" id="modeHint" style="text-align:center;margin-bottom:0;">Tự động: theo timer.</p>
       </div>
     </div>
 
     <!-- Timer -->
     <div class="section">
-      <h2>Thời gian</h2>
+      <h2 data-i18n="timer_title">Thời gian</h2>
       <div class="row">
-        <input id="durMin" type="number" min="0" value="5" style="width:50px;"> phút
-        <input id="durSec" type="number" min="0" max="59" value="0" style="width:50px;"> giây
-        <button onclick="setDuration()">Đặt</button>
+        <input id="durMin" type="number" min="0" value="5" style="width:40px;"> <span data-i18n="min_unit">p</span>
+        <input id="durSec" type="number" min="0" max="59" value="0" style="width:40px;"> <span data-i18n="sec_unit">g</span>
+        <button onclick="setDuration()" data-i18n="btn_set">Đặt</button>
       </div>
       <div id="timerBig">--:--</div>
       <div class="timer-btns">
@@ -242,16 +241,16 @@
         <button onclick="post('/api/timer/reset')"  >⏮</button>
         <button onclick="post('/api/timer/finish')" class="btn-red">⏹</button>
       </div>
-      <div style="text-align:center;">
-        <button onclick="post('/api/reset_all')" style="font-size:12px;width:100%;">🔄 Reset tất cả điểm + giờ</button>
+      <div style="text-align:center;margin-top:4px;">
+        <button onclick="post('/api/reset_all')" style="font-size:11px;width:100%;" data-i18n="btn_reset_all">🔄 Reset tất cả</button>
       </div>
     </div>
 
-    <!-- ===== CÀI ĐẶT WIDGET XẾP HẠNG (MCASTAR INTEGRATED) ===== -->
+    <!-- ===== CÀI ĐẶT WIDGET XẾP HẠNG ===== -->
     <div class="section" style="padding:0; background:transparent;">
       <div class="sp-box">
         <div class="sp-header">
-          <span>Cài đặt Widget Xếp hạng</span>
+          <span data-i18n="widget_title">Widget Xếp hạng</span>
           <label class="switch">
             <input type="checkbox" id="spEnabled" checked onchange="pushSettings()">
             <span class="slider-sw"></span>
@@ -259,48 +258,45 @@
         </div>
         
         <div class="sp-body">
-          <div class="sp-title-sec">Cài đặt cơ bản</div>
+          <div class="sp-title-sec" data-i18n="basic_setting">Cài đặt cơ bản</div>
           <div class="sp-row">
-            <label>Tên xếp hạng:</label>
-            <input type="text" id="spTitle" value="Danh sách thải" style="width: 105px;" onchange="pushSettings()">
-            <button class="btn-purple" onclick="copyRankName()" style="padding:4px 6px;">🔗 Sao chép</button>
+            <label data-i18n="rank_name_lbl">Tên xếp hạng:</label>
+            <input type="text" id="spTitle" value="Danh sách thải" style="width: 80px;" onchange="pushSettings()">
+            <button class="btn-purple" onclick="copyRankName()" style="padding:3px 5px;" data-i18n="btn_copy">🔗 Copy</button>
           </div>
 
-          <div class="sp-title-sec">Quy tắc sắp xếp</div>
+          <div class="sp-title-sec" data-i18n="sort_sec">Sắp xếp</div>
           <div class="sp-row">
-            <label>Thứ tự xếp hạng:</label>
+            <label data-i18n="order_lbl">Thứ tự:</label>
             <div class="radio-grp">
-              <label><input type="radio" name="spOrder" value="col" onchange="pushSettings()"> Dọc</label>
-              <label><input type="radio" name="spOrder" value="row" checked onchange="pushSettings()"> Ngang</label>
+              <label><input type="radio" name="spOrder" value="col" onchange="pushSettings()"> <span data-i18n="ord_col">Dọc</span></label>
+              <label><input type="radio" name="spOrder" value="row" checked onchange="pushSettings()"> <span data-i18n="ord_row">Ngang</span></label>
             </div>
           </div>
           <div class="sp-row">
-            <label>Tự động chia cột:</label>
-            Tối đa mỗi cột <input type="number" id="spPerCol" value="10" min="1" max="25" onchange="pushSettings()"> người
+            <label data-i18n="split_col">Chia cột:</label>
+            <span data-i18n="per_col_prefix">Mỗi cột</span> <input type="number" id="spPerCol" value="10" min="1" max="25" onchange="pushSettings()">
           </div>
-          <p class="hint" style="margin-top:-3px;">*Tối đa 25 người/cột, tối đa 4 cột</p>
 
-          <div class="sp-title-sec">Phần tử hiển thị</div>
+          <div class="sp-title-sec" data-i18n="display_sec">Hiển thị</div>
           <div class="sp-row">
-            <label style="min-width: 100px;">Nội dung hiển thị:</label>
-            <label><input type="checkbox" id="spShowName" checked onchange="pushSettings()"> Biệt danh</label>
-            <label><input type="checkbox" id="spShowScore" checked onchange="pushSettings()"> Điểm số</label>
-            <label><input type="checkbox" id="spShowRound" checked onchange="pushSettings()"> Vòng</label>
+            <label><input type="checkbox" id="spShowName" checked onchange="pushSettings()"> <span data-i18n="disp_name">Tên</span></label>
+            <label><input type="checkbox" id="spShowScore" checked onchange="pushSettings()"> <span data-i18n="disp_score">Điểm</span></label>
+            <label><input type="checkbox" id="spShowRound" checked onchange="pushSettings()"> <span data-i18n="disp_round">Vòng</span></label>
           </div>
           <div class="sp-row">
-            <label style="min-width: 100px;">Ảnh đại diện:</label>
+            <label data-i18n="av_lbl">Avatar:</label>
             <div class="radio-grp">
-              <label><input type="radio" name="spAv" value="small" onchange="pushSettings()"> Nhỏ</label>
-              <label><input type="radio" name="spAv" value="large" checked onchange="pushSettings()"> Lớn</label>
-              <label><input type="radio" name="spAv" value="none" onchange="pushSettings()"> Không</label>
+              <label><input type="radio" name="spAv" value="small" onchange="pushSettings()"> <span data-i18n="av_sm">Nhỏ</span></label>
+              <label><input type="radio" name="spAv" value="large" checked onchange="pushSettings()"> <span data-i18n="av_lg">Lớn</span></label>
+              <label><input type="radio" name="spAv" value="none" onchange="pushSettings()"> <span data-i18n="av_off">Tắt</span></label>
             </div>
           </div>
 
-          <div class="sp-title-sec">Phạm vi hiển thị</div>
+          <div class="sp-title-sec" data-i18n="range_sec">Phạm vi TOP</div>
           <div class="sp-row">
-            <label>Phạm vi hiển thị:</label>
-            TOP <input type="number" id="spFrom" value="1" min="1" max="100" style="width:48px;" onchange="pushSettings()">
-            — TOP <input type="number" id="spTo" value="96" min="1" max="100" style="width:48px;" onchange="pushSettings()">
+            <input type="number" id="spFrom" value="1" min="1" max="100" style="width:40px;" onchange="pushSettings()">
+            — <input type="number" id="spTo" value="96" min="1" max="100" style="width:40px;" onchange="pushSettings()">
           </div>
         </div>
       </div>
@@ -308,32 +304,202 @@
 
     <!-- OBS links -->
     <div class="section">
-      <h2>OBS Browser Source</h2>
+      <h2 data-i18n="obs_title">OBS Browser Source</h2>
       <div class="ov-links">
         <div>
-          <div class="ov-label">📊 Bảng XH lưới (1280×720)</div>
+          <div class="ov-label">
+            <span data-i18n="obs_rank">📊 Bảng XH lưới</span>
+          </div>
           <div class="ov-link" id="lnk-rank" onclick="copyLink('lnk-rank')">--</div>
         </div>
         <div>
-          <div class="ov-label">⏱ Widget idol + timer (580×150)</div>
+          <div class="ov-label">
+            <span data-i18n="obs_popup">⏱ Widget idol + timer</span>
+            <span class="dim-badge" data-i18n="popup_dim">W: 660 | H: 180</span>
+          </div>
           <div class="ov-link" id="lnk-popup" onclick="copyLink('lnk-popup')">--</div>
         </div>
-        <div>
-          <div class="ov-label">📋 Overlay danh sách</div>
-          <div class="ov-link" id="lnk-old" onclick="copyLink('lnk-old')">--</div>
-        </div>
       </div>
-      <p class="hint" style="margin-top:5px;">Bấm để copy link dán vào OBS.</p>
     </div>
 
   </div>
 </div>
 
 <script>
+// ---- I18N DICTIONARY ----
+const i18n = {
+  vi: {
+    idol_title: "Idol",
+    select_btn: "☑ Chọn",
+    exit_select: "✕ Thoát",
+    select_all: "Tất",
+    deselect: "Bỏ",
+    del_selected: "🗑 Xóa chọn",
+    del_all: "🗑 Xóa tất",
+    add_idol_title: "Thêm Idol",
+    search_ph: "🔍 Tìm idol...",
+    tab_single: "Thêm 1",
+    tab_batch: "Hàng loạt",
+    idol_name_ph: "Tên idol",
+    btn_add: "➕ Thêm",
+    avatar_ph: "Link ảnh avatar (tuỳ chọn)",
+    batch_hint: "Mỗi tên một dòng.",
+    batch_ph: "Idol A\nIdol B",
+    btn_add_batch: "➕ Thêm tất cả",
+    tiktok_title: "TikTok Live",
+    gift_title: "Nhận điểm Gift",
+    gift_on: "🟢 Nhận điểm",
+    gift_off: "⏸ Không nhận",
+    auto_mode: "🤖 Tự động",
+    manual_mode: "👆 Thủ công",
+    btn_start: "▶ Bắt đầu",
+    btn_stop: "⏹ Dừng",
+    timer_title: "Thời gian",
+    min_unit: "p",
+    sec_unit: "g",
+    btn_set: "Đặt",
+    btn_reset_all: "🔄 Reset tất cả",
+    widget_title: "Widget Xếp hạng",
+    basic_setting: "Cài đặt cơ bản",
+    rank_name_lbl: "Tên xếp hạng:",
+    btn_copy: "🔗 Copy",
+    sort_sec: "Sắp xếp",
+    order_lbl: "Thứ tự:",
+    ord_col: "Dọc",
+    ord_row: "Ngang",
+    split_col: "Chia cột:",
+    per_col_prefix: "Mỗi cột",
+    display_sec: "Hiển thị",
+    disp_name: "Tên",
+    disp_score: "Điểm",
+    disp_round: "Vòng",
+    av_lbl: "Avatar:",
+    av_sm: "Nhỏ",
+    av_lg: "Lớn",
+    av_off: "Tắt",
+    range_sec: "Phạm vi TOP",
+    obs_title: "OBS Browser Source",
+    obs_rank: "📊 Bảng XH lưới",
+    obs_popup: "⏱ Widget idol + timer",
+    popup_dim: "Rộng: 660 | Cao: 180",
+    conn_ok: "✔ Đã nối: ",
+    conn_connecting: "Đang nối...",
+    conn_none: "Chưa kết nối",
+    btn_select_idol: "Chọn",
+    btn_eliminate: "Loại",
+    btn_revive: "Hồi sinh",
+    btn_add_pts: "Cộng",
+    btn_reset_pts: "Reset",
+    btn_set_pts: "Đặt điểm",
+    pts_ph: "±Số điểm",
+    score_ph: "Tổng điểm...",
+    msg_copied: "✔ Đã copy!",
+    confirm_del_single: "Xoá ",
+    confirm_del_selected: "Xóa %d idol đã chọn?",
+    confirm_del_all: "Xóa TẤT CẢ %d idol?",
+    alert_no_select: "Chưa chọn idol!",
+    alert_empty: "Danh sách trống!"
+  },
+  en: {
+    idol_title: "Idol List",
+    select_btn: "☑ Select",
+    exit_select: "✕ Exit",
+    select_all: "All",
+    deselect: "None",
+    del_selected: "🗑 Delete",
+    del_all: "🗑 Clear All",
+    add_idol_title: "Add Idol",
+    search_ph: "🔍 Search idol...",
+    tab_single: "Single",
+    tab_batch: "Batch",
+    idol_name_ph: "Idol name",
+    btn_add: "➕ Add",
+    avatar_ph: "Avatar link (optional)",
+    batch_hint: "One name per line.",
+    batch_ph: "Idol A\nIdol B",
+    btn_add_batch: "➕ Add All",
+    tiktok_title: "TikTok Live",
+    gift_title: "Gift Points",
+    gift_on: "🟢 Receiving",
+    gift_off: "⏸ Paused",
+    auto_mode: "🤖 Auto",
+    manual_mode: "👆 Manual",
+    btn_start: "▶ Start",
+    btn_stop: "⏹ Stop",
+    timer_title: "Timer",
+    min_unit: "m",
+    sec_unit: "s",
+    btn_set: "Set",
+    btn_reset_all: "🔄 Reset All",
+    widget_title: "Leaderboard Widget",
+    basic_setting: "Basic Settings",
+    rank_name_lbl: "Title:",
+    btn_copy: "🔗 Copy",
+    sort_sec: "Sorting Rules",
+    order_lbl: "Direction:",
+    ord_col: "Column",
+    ord_row: "Row",
+    split_col: "Split Cols:",
+    per_col_prefix: "Max/col",
+    display_sec: "Display Elements",
+    disp_name: "Name",
+    disp_score: "Score",
+    disp_round: "Round",
+    av_lbl: "Avatar:",
+    av_sm: "Small",
+    av_lg: "Large",
+    av_off: "Off",
+    range_sec: "TOP Range",
+    obs_title: "OBS Browser Source",
+    obs_rank: "📊 Grid Leaderboard",
+    obs_popup: "⏱ Idol & Timer Widget",
+    popup_dim: "Width: 660 | Height: 180",
+    conn_ok: "✔ Connected: ",
+    conn_connecting: "Connecting...",
+    conn_none: "Disconnected",
+    btn_select_idol: "Select",
+    btn_eliminate: "Out",
+    btn_revive: "Revive",
+    btn_add_pts: "Add",
+    btn_reset_pts: "Reset",
+    btn_set_pts: "Set Score",
+    pts_ph: "±Pts",
+    score_ph: "Score...",
+    msg_copied: "✔ Copied!",
+    confirm_del_single: "Delete ",
+    confirm_del_selected: "Delete %d selected idols?",
+    confirm_del_all: "Delete ALL %d idols?",
+    alert_no_select: "No idols selected!",
+    alert_empty: "List is empty!"
+  }
+};
+
+let currentLang = localStorage.getItem("app_lang") || "vi";
+
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem("app_lang", lang);
+  document.getElementById("lang-vi").classList.toggle("active", lang === "vi");
+  document.getElementById("lang-en").classList.toggle("active", lang === "en");
+  
+  // Translate static text elements
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.getAttribute("data-i18n");
+    if (i18n[lang][key]) el.textContent = i18n[lang][key];
+  });
+  
+  // Translate placeholders
+  document.querySelectorAll("[data-i18n-ph]").forEach(el => {
+    const key = el.getAttribute("data-i18n-ph");
+    if (i18n[lang][key]) el.placeholder = i18n[lang][key];
+  });
+
+  render();
+}
+
 let state = null;
 let searchQ = "";
 
-// ---- utils ----
 function post(url, body) {
   return fetch(url, { method:"POST", headers:{"Content-Type":"application/json"}, body: body!=null?JSON.stringify(body):undefined });
 }
@@ -345,15 +511,14 @@ function copyLink(id) {
   const t = document.getElementById(id).textContent;
   navigator.clipboard.writeText(t).then(()=>{
     const el=document.getElementById(id); const old=el.textContent;
-    el.textContent="✔ Đã copy!"; setTimeout(()=>el.textContent=old,1500);
+    el.textContent=i18n[currentLang].msg_copied; setTimeout(()=>el.textContent=old,1500);
   });
 }
 function copyRankName() {
   const t = document.getElementById("spTitle").value;
-  navigator.clipboard.writeText(t).then(() => alert("Đã sao chép tên xếp hạng: " + t));
+  navigator.clipboard.writeText(t).then(() => alert(i18n[currentLang].msg_copied + " " + t));
 }
 
-// ---- search ----
 function filterIdols(q) {
   searchQ = q.trim().toLowerCase();
   document.getElementById("searchClear").style.display = searchQ ? "block" : "none";
@@ -370,23 +535,19 @@ function applyFilter() {
   });
 }
 
-// ---- room ----
 function connectRoom()    { const id=document.getElementById("roomInput").value.trim(); if(id) post("/api/room",{unique_id:id}); }
 function disconnectRoom() { post("/api/room/disconnect"); }
 
-// ---- gift mode ----
 function setMode(m)   { post("/api/gifts/mode",{mode:m}); }
 function giftsStart() { post("/api/gifts/start"); }
 function giftsStop()  { post("/api/gifts/stop"); }
 
-// ---- timer ----
 function setDuration() {
   const m=parseInt(document.getElementById("durMin").value||"0",10);
   const s=parseInt(document.getElementById("durSec").value||"0",10);
   post("/api/timer/duration",{seconds:m*60+s});
 }
 
-// ---- idol ----
 function switchTab(name) {
   document.querySelectorAll(".tab-btn").forEach((b,i)=>b.classList.toggle("on",["single","batch"][i]===name));
   document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("on"));
@@ -402,28 +563,26 @@ function addBatch() {
   const names=document.getElementById("batchNames").value.split("\n").map(s=>s.trim()).filter(Boolean);
   if(!names.length) return;
   post("/api/idol/batch",{names}).then(r=>r.json()).then(d=>{
-    document.getElementById("batchStatus").textContent="✔ Đã thêm "+d.added;
+    document.getElementById("batchStatus").textContent="✔ "+d.added;
     document.getElementById("batchNames").value="";
     setTimeout(()=>document.getElementById("batchStatus").textContent="",3000);
   });
 }
-function removeIdol(id,name){ if(confirm("Xoá "+name+"?")) fetch("/api/idol/"+id,{method:"DELETE"}); }
+function removeIdol(id,name){ if(confirm(i18n[currentLang].confirm_del_single + name + "?")) fetch("/api/idol/"+id,{method:"DELETE"}); }
 
-// ===== XÓA HÀNG LOẠT =====
 window._selectMode = false;
-
 function toggleSelectMode() {
   window._selectMode = !window._selectMode;
   const btn = document.getElementById("btnSelectMode");
   const actions = document.getElementById("selectActions");
   if (window._selectMode) {
-    btn.textContent = "✕ Thoát chọn";
+    btn.textContent = i18n[currentLang].exit_select;
     btn.style.background = "#5c1e1e";
     btn.style.borderColor = "#e06666";
     btn.style.color = "#ef9f9f";
     actions.style.display = "flex";
   } else {
-    btn.textContent = "☑ Chọn để xóa";
+    btn.textContent = i18n[currentLang].select_btn;
     btn.style.background = "#444";
     btn.style.borderColor = "#666";
     btn.style.color = "#eee";
@@ -432,18 +591,13 @@ function toggleSelectMode() {
   render();
 }
 
-function selectAll() {
-  document.querySelectorAll(".idol-select-chk").forEach(c => c.checked = true);
-}
-
-function deselectAll() {
-  document.querySelectorAll(".idol-select-chk").forEach(c => c.checked = false);
-}
+function selectAll() { document.querySelectorAll(".idol-select-chk").forEach(c => c.checked = true); }
+function deselectAll() { document.querySelectorAll(".idol-select-chk").forEach(c => c.checked = false); }
 
 function deleteSelected() {
   const ids = [...document.querySelectorAll(".idol-select-chk:checked")].map(c => c.dataset.id);
-  if (!ids.length) { alert("Chưa chọn idol nào!"); return; }
-  if (!confirm("Xóa " + ids.length + " idol đã chọn?")) return;
+  if (!ids.length) { alert(i18n[currentLang].alert_no_select); return; }
+  if (!confirm(i18n[currentLang].confirm_del_selected.replace("%d", ids.length))) return;
   post("/api/idol/bulk_delete", {ids}).then(() => {
     window._selectMode = false;
     toggleSelectMode();
@@ -452,8 +606,8 @@ function deleteSelected() {
 
 function deleteAllIdols() {
   const total = (lastState && lastState.idols) ? lastState.idols.length : 0;
-  if (!total) { alert("Danh sách đang trống!"); return; }
-  if (!confirm("Xóa TẤT CẢ " + total + " idol? Không thể hoàn tác!")) return;
+  if (!total) { alert(i18n[currentLang].alert_empty); return; }
+  if (!confirm(i18n[currentLang].confirm_del_all.replace("%d", total))) return;
   fetch("/api/idol/all", {method:"DELETE"});
 }
 function setActive(id)      { post("/api/idol/"+id+"/active"); }
@@ -473,7 +627,6 @@ function setScore(id,inputId){
   document.getElementById(inputId).value="";
 }
 
-// ---- settings BXH → build overlay URL ----
 function pushSettings() {
   const enabled   = document.getElementById("spEnabled").checked ? "1" : "0";
   const title     = encodeURIComponent(document.getElementById("spTitle").value);
@@ -491,7 +644,6 @@ function pushSettings() {
   document.getElementById("lnk-rank").textContent = rankUrl;
 }
 
-// ---- render ----
 function initials(name){ return name.trim().slice(0,2).toUpperCase(); }
 const RANK_ICONS = ["👑","🥈","🥉"];
 
@@ -500,31 +652,28 @@ function render(){
   if(!state) return;
   lastState = state;
 
-  // connection
-  const cs=document.getElementById("connStatus");
-  if(state.connected){ cs.textContent="✔ Đã kết nối: "+state.room; cs.className="status ok"; }
-  else if(state.last_error){ cs.textContent="✘ "+state.last_error; cs.className="status bad"; }
-  else { cs.textContent=state.room?"Đang kết nối...":"Chưa kết nối"; cs.className="status"; }
+  const L = i18n[currentLang];
 
-  // gift
+  const cs=document.getElementById("connStatus");
+  if(state.connected){ cs.textContent=L.conn_ok+state.room; cs.className="status ok"; }
+  else if(state.last_error){ cs.textContent="✘ "+state.last_error; cs.className="status bad"; }
+  else { cs.textContent=state.room?L.conn_connecting:L.conn_none; cs.className="status"; }
+
   const on=state.accepting_gifts;
   document.getElementById("giftBox").className=on?"on":"off";
   const gs=document.getElementById("giftStatus");
   gs.className=on?"on":"off";
-  gs.textContent=on?"🟢 Đang nhận điểm":"⏸ Không nhận";
+  gs.textContent=on?L.gift_on:L.gift_off;
   const isAuto=state.gift_mode==="auto";
   document.getElementById("btnAuto").classList.toggle("btn-yellow",isAuto);
   document.getElementById("btnManual").classList.toggle("btn-yellow",!isAuto);
   document.getElementById("manualBtns").style.display=isAuto?"none":"flex";
-  document.getElementById("modeHint").textContent=isAuto?"Tự động: theo timer.":"Thủ công: bấm nút.";
   document.getElementById("btnGiftStart").disabled=on;
   document.getElementById("btnGiftStop").disabled=!on;
 
-  // timer
   const t=state.timer;
   document.getElementById("timerBig").textContent=fmtTime(t.remaining)+(t.running?" ▶":t.finished?" 🏁":"");
 
-  // idols sorted: không OUT → điểm cao trước | OUT → bị out trước xếp cao hơn
   const _active = [...state.idols].filter(i=>!i.eliminated).sort((a,b)=>b.score-a.score);
   const _ousted = [...state.idols].filter(i=> i.eliminated).sort((a,b)=>(b.eliminated_at||0)-(a.eliminated_at||0));
   const idols   = [..._active, ..._ousted];
@@ -563,36 +712,33 @@ function render(){
     const scoreEl=document.createElement("div"); scoreEl.className="idol-score";
     scoreEl.textContent=idol.score.toLocaleString()+" 💎"; top.appendChild(scoreEl);
 
-    // Chọn nhận quà (chỉ khi chưa OUT)
     if(!idol.eliminated){
       const ab=document.createElement("button");
-      ab.textContent=idol.active?"★":"Chọn"; ab.style.fontSize="12px";
+      ab.textContent=idol.active?"★":L.btn_select_idol; ab.style.fontSize="11px";
       if(idol.active) ab.classList.add("btn-yellow");
       ab.onclick=()=>setActive(idol.id); top.appendChild(ab);
     }
 
-    // Loại bỏ / Hồi sinh
     if(!idol.eliminated){
-      const eb=document.createElement("button"); eb.textContent="Loại bỏ";
-      eb.classList.add("btn-orange"); eb.style.fontSize="11px";
+      const eb=document.createElement("button"); eb.textContent=L.btn_eliminate;
+      eb.classList.add("btn-orange"); eb.style.fontSize="10px";
       eb.onclick=()=>eliminateIdol(idol.id); top.appendChild(eb);
     } else {
-      const rv=document.createElement("button"); rv.textContent="Hồi sinh";
-      rv.classList.add("btn-teal"); rv.style.fontSize="11px";
+      const rv=document.createElement("button"); rv.textContent=L.btn_revive;
+      rv.classList.add("btn-teal"); rv.style.fontSize="10px";
       rv.onclick=()=>reviveIdol(idol.id); top.appendChild(rv);
     }
 
     const db=document.createElement("button"); db.textContent="✕"; db.classList.add("btn-red");
-    db.style.fontSize="12px";
+    db.style.fontSize="11px";
     db.onclick=()=>removeIdol(idol.id,idol.name); top.appendChild(db);
 
-    // Checkbox chọn để xóa (chỉ hiện khi ở select mode)
     if (window._selectMode) {
       const chk = document.createElement("input");
       chk.type = "checkbox";
       chk.className = "idol-select-chk";
       chk.dataset.id = idol.id;
-      chk.style.cssText = "width:18px;height:18px;cursor:pointer;accent-color:#e05050;flex-shrink:0;";
+      chk.style.cssText = "width:16px;height:16px;cursor:pointer;accent-color:#e05050;flex-shrink:0;";
       top.insertBefore(chk, top.firstChild);
     }
 
@@ -601,39 +747,31 @@ function render(){
     barFill.style.width=(idol.score/maxScore*100)+"%";
     barBg.appendChild(barFill);
 
-    // Bot row 1: cộng nhanh + nhập tay
+    /* Hàng nhập điểm tùy chỉnh (+/-) */
     const bot=document.createElement("div"); bot.className="idol-bot";
-    [100,500,1000,5000].forEach(v=>{
-      const b=document.createElement("button"); b.textContent="+"+v; b.style.fontSize="12px";
-      b.onclick=()=>post("/api/idol/"+idol.id+"/points",{delta:v}); bot.appendChild(b);
-    });
     const ci=document.createElement("input"); ci.type="number"; ci.id=inputId;
-    ci.placeholder="±Số"; ci.style.fontSize="12px"; ci.style.width="70px";
-    ci.title="Số dương để tăng, số âm để giảm";
+    ci.placeholder=L.pts_ph; ci.style.fontSize="11px"; ci.style.flex="1"; ci.style.minWidth="0";
     ci.onkeydown=e=>{ if(e.key==="Enter") addCustomPoints(idol.id,inputId); };
-    const cb=document.createElement("button"); cb.textContent="Cộng"; cb.style.fontSize="12px";
+    const cb=document.createElement("button"); cb.textContent=L.btn_add_pts; cb.style.fontSize="10px";
     cb.onclick=()=>addCustomPoints(idol.id,inputId);
-    const rb=document.createElement("button"); rb.textContent="Reset"; rb.style.fontSize="12px";
+    const rb=document.createElement("button"); rb.textContent=L.btn_reset_pts; rb.style.fontSize="10px";
     rb.onclick=()=>resetIdol(idol.id);
     bot.appendChild(ci); bot.appendChild(cb); bot.appendChild(rb);
 
-    // Bot row 2: sửa điểm trực tiếp
+    /* Hàng đặt điểm cố định */
     const bot2=document.createElement("div"); bot2.className="idol-bot";
     bot2.style.marginTop="4px";
     const si=document.createElement("input"); si.type="number"; si.id=setId; si.min="0";
-    si.placeholder="Sửa điểm = ..."; si.style.fontSize="12px"; si.style.flex="1";
+    si.placeholder=L.score_ph; si.style.fontSize="11px"; si.style.flex="1"; si.style.minWidth="0";
     si.onkeydown=e=>{ if(e.key==="Enter") setScore(idol.id,setId); };
-    const sb=document.createElement("button"); sb.textContent="Đặt điểm"; sb.style.fontSize="12px";
+    const sb=document.createElement("button"); sb.textContent=L.btn_set_pts; sb.style.fontSize="10px";
     sb.onclick=()=>setScore(idol.id,setId);
-    const hint2=document.createElement("span"); hint2.style.cssText="font-size:10px;opacity:.45;";
-    hint2.textContent="★ Nhập số dương để tăng, số âm để giảm";
     bot2.appendChild(si); bot2.appendChild(sb);
 
     card.appendChild(top);
     card.appendChild(barBg);
     card.appendChild(bot);
     card.appendChild(bot2);
-    card.appendChild(hint2);
     list.appendChild(card);
   });
 
@@ -648,11 +786,10 @@ function connect(){
 }
 connect();
 
-// init overlay links
 const base=location.origin;
 document.getElementById("lnk-popup").textContent=base+"/overlay/popup";
-document.getElementById("lnk-old").textContent=base+"/overlay";
 document.getElementById("searchClear").style.display="none";
+setLang(currentLang);
 pushSettings();
 </script>
 </body>
