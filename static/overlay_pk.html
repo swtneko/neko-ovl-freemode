@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>PK Overlay</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: transparent; font-family: 'Segoe UI', Arial, sans-serif; overflow: hidden; }
+
+  #pk-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    width: 100%;
+    padding: 0;
+  }
+
+  /* Một lane PK */
+  .pk-lane {
+    display: flex;
+    align-items: center;
+    height: 54px;
+    position: relative;
+    margin-bottom: 6px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: rgba(0,0,0,0.55);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+  }
+
+  /* Avatar / rank badge */
+  .pk-badge {
+    flex-shrink: 0;
+    width: 54px;
+    height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    font-size: 20px;
+    color: #fff;
+    z-index: 2;
+    position: relative;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.7);
+  }
+
+  /* Icon gift trigger nhỏ */
+  .pk-trigger-icon {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    z-index: 2;
+    margin-left: 2px;
+    margin-right: 6px;
+    color: #fff;
+    font-weight: bold;
+  }
+
+  /* Tên lane */
+  .pk-name {
+    flex: 1;
+    font-size: 18px;
+    font-weight: 700;
+    color: #fff;
+    z-index: 2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.8);
+    padding-right: 8px;
+  }
+
+  /* Điểm số */
+  .pk-score {
+    flex-shrink: 0;
+    font-size: 22px;
+    font-weight: 900;
+    color: #fff;
+    z-index: 2;
+    padding-right: 14px;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.8);
+    min-width: 90px;
+    text-align: right;
+  }
+
+  /* Thanh fill màu động */
+  .pk-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    border-radius: 10px;
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    opacity: 0.7;
+    z-index: 0;
+  }
+
+  /* Rank 1 nổi bật hơn */
+  .pk-lane.rank-1 .pk-fill { opacity: 0.85; }
+  .pk-lane.rank-1 { box-shadow: 0 0 20px rgba(255,200,0,0.35); }
+  .pk-lane.rank-1 .pk-score { color: #ffe066; }
+
+  /* Dải sáng trên fill */
+  .pk-fill::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 40%;
+    background: rgba(255,255,255,0.18);
+    border-radius: 10px 10px 0 0;
+  }
+
+  /* Thanh tổng (% so với leader) */
+  .pk-pct {
+    position: absolute;
+    right: 8px;
+    bottom: 4px;
+    font-size: 11px;
+    color: rgba(255,255,255,0.55);
+    z-index: 2;
+  }
+
+  /* Trạng thái PK chưa bật */
+  #pk-inactive {
+    color: #666;
+    text-align: center;
+    padding: 40px 20px;
+    font-size: 16px;
+  }
+</style>
+</head>
+<body>
+<div id="pk-wrap">
+  <div id="pk-inactive">PK chưa được kích hoạt</div>
+</div>
+
+<script>
+let state = null;
+
+function render() {
+  const wrap = document.getElementById('pk-wrap');
+  if (!state) return;
+
+  const pk = state.pk;
+  if (!pk || !pk.active || !pk.lanes || pk.lanes.length === 0) {
+    wrap.innerHTML = '<div id="pk-inactive">PK chưa được kích hoạt</div>';
+    return;
+  }
+
+  const lanes = [...pk.lanes];
+  const maxScore = Math.max(1, ...lanes.map(l => l.score));
+
+  // Sắp xếp: hiển thị theo điểm giảm dần để rank 1 luôn trên cùng
+  const sorted = [...lanes].sort((a, b) => b.score - a.score);
+
+  let html = '';
+  sorted.forEach((lane, idx) => {
+    const rank = idx + 1;
+    const pct = Math.max(4, (lane.score / maxScore) * 100).toFixed(1);
+    const rankBadge = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `${rank}`;
+    const color = lane.color || '#4e9af1';
+    const pctDisplay = maxScore > 1 ? `${((lane.score / maxScore) * 100).toFixed(0)}%` : '';
+
+    html += `
+    <div class="pk-lane rank-${rank}">
+      <div class="pk-fill" style="width:${pct}%;background:${color};"></div>
+      <div class="pk-badge">${rankBadge}</div>
+      <div class="pk-trigger-icon" title="Thả gift: ${lane.trigger_gift_name || '?'}">
+        ${lane.trigger_gift_name ? lane.trigger_gift_name.slice(0,2) : '#'}
+      </div>
+      <div class="pk-name">${lane.name}</div>
+      <div class="pk-score">${(lane.score || 0).toLocaleString()}</div>
+      ${pctDisplay ? `<div class="pk-pct">${pctDisplay}</div>` : ''}
+    </div>`;
+  });
+
+  wrap.innerHTML = html;
+}
+
+function connect() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+  const ws = new WebSocket(`${proto}://${location.host}/ws`);
+  ws.onmessage = ev => {
+    try {
+      const msg = JSON.parse(ev.data);
+      if (msg.type === 'state') { state = msg.data; render(); }
+    } catch(e) {}
+  };
+  ws.onclose = () => setTimeout(connect, 1500);
+}
+connect();
+</script>
+</body>
+</html>

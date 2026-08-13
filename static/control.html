@@ -246,6 +246,41 @@
       </div>
     </div>
 
+    <!-- ===== CHẾ ĐỘ PK ===== -->
+    <div class="section" id="pk-section">
+      <h2>⚔️ Chế độ PK</h2>
+
+      <div id="pk-status-bar" style="text-align:center;font-size:13px;margin-bottom:8px;padding:4px 8px;border-radius:6px;background:#2a2a35;">
+        PK chưa kích hoạt
+      </div>
+
+      <!-- Setup lanes -->
+      <div id="pk-setup-box">
+        <div style="font-size:12px;color:#aaa;margin-bottom:6px;">
+          Thêm 2–5 lane. <b>Gift trigger</b>: ID quà trên TikTok viewer thả để chọn lane đó.
+        </div>
+        <div id="pk-lanes-input"></div>
+        <div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">
+          <button onclick="pkAddLane()" style="font-size:12px;">➕ Thêm lane</button>
+          <button onclick="pkSetup()" class="btn-green" style="font-size:12px;">⚔️ Bắt đầu PK</button>
+          <button onclick="pkStop()" class="btn-red" style="font-size:12px;" id="btnPkStop" disabled>⏹ Dừng PK</button>
+          <button onclick="pkResetScores()" style="font-size:12px;" id="btnPkReset" disabled>🔄 Reset điểm</button>
+        </div>
+      </div>
+
+      <!-- Điểm các lane (hiện khi PK đang chạy) -->
+      <div id="pk-scores-box" style="margin-top:8px;display:none;">
+        <div style="font-size:12px;color:#aaa;margin-bottom:4px;">Cộng/trừ điểm thủ công:</div>
+        <div id="pk-lane-controls"></div>
+      </div>
+
+      <!-- Link OBS -->
+      <div style="margin-top:8px;">
+        <div style="font-size:12px;color:#aaa;margin-bottom:3px;">⚔️ Overlay PK (OBS Browser Source):</div>
+        <div class="ov-link" id="lnk-pk" onclick="copyLink('lnk-pk')" style="font-size:11px;">--</div>
+      </div>
+    </div>
+
     <!-- ===== CÀI ĐẶT WIDGET XẾP HẠNG ===== -->
     <div class="section" style="padding:0; background:transparent;">
       <div class="sp-box">
@@ -318,6 +353,10 @@
             <span class="dim-badge" data-i18n="popup_dim">W: 660 | H: 180</span>
           </div>
           <div class="ov-link" id="lnk-popup" onclick="copyLink('lnk-popup')">--</div>
+        </div>
+        <div>
+          <div class="ov-label">⚔️ PK Overlay</div>
+          <div class="ov-link" id="lnk-pk-obs" onclick="copyLink('lnk-pk-obs')">--</div>
         </div>
       </div>
     </div>
@@ -776,6 +815,9 @@ function render(){
   });
 
   applyFilter();
+
+  // PK mode
+  renderPkState(state.pk);
 }
 
 function connect(){
@@ -788,9 +830,165 @@ connect();
 
 const base=location.origin;
 document.getElementById("lnk-popup").textContent=base+"/overlay/popup";
+document.getElementById("lnk-pk-obs").textContent=base+"/overlay/pk";
+document.getElementById("lnk-pk").textContent=base+"/overlay/pk";
 document.getElementById("searchClear").style.display="none";
 setLang(currentLang);
 pushSettings();
+
+// =====================================================================
+// PK MODE
+// =====================================================================
+
+// Màu mặc định cho các lane
+const PK_COLORS = ["#e05050","#4e9af1","#f5a623","#2ecc71","#9b59b6"];
+let pkLanes = []; // [{name, trigger_gift_id, trigger_gift_name, color}]
+
+function pkInit() {
+  // Khởi tạo với 2 lane mặc định
+  pkLanes = [
+    { name: "Lane 1", trigger_gift_id: "", trigger_gift_name: "", color: PK_COLORS[0] },
+    { name: "Lane 2", trigger_gift_id: "", trigger_gift_name: "", color: PK_COLORS[1] },
+  ];
+  renderPkInputs();
+}
+pkInit();
+
+function renderPkInputs() {
+  const box = document.getElementById("pk-lanes-input");
+  box.innerHTML = "";
+  pkLanes.forEach((lane, i) => {
+    const row = document.createElement("div");
+    row.style.cssText = "display:flex;gap:4px;align-items:center;margin-bottom:6px;flex-wrap:wrap;";
+    row.innerHTML = `
+      <div style="width:12px;height:12px;border-radius:3px;background:${lane.color};flex-shrink:0;"></div>
+      <input placeholder="Tên lane" value="${lane.name}" style="width:90px;font-size:12px;"
+        oninput="pkLanes[${i}].name=this.value">
+      <input placeholder="Gift ID" value="${lane.trigger_gift_id}" style="width:80px;font-size:12px;"
+        oninput="pkLanes[${i}].trigger_gift_id=this.value" title="Gift ID trên TikTok (số)">
+      <input placeholder="Tên gift" value="${lane.trigger_gift_name}" style="width:80px;font-size:12px;"
+        oninput="pkLanes[${i}].trigger_gift_name=this.value" title="Tên gift hiển thị">
+      <input type="color" value="${lane.color}" style="width:28px;height:28px;padding:1px;cursor:pointer;"
+        oninput="pkLanes[${i}].color=this.value;renderPkInputs()">
+      ${pkLanes.length > 2 ? `<button onclick="pkRemoveLane(${i})" style="font-size:11px;padding:2px 6px;" class="btn-red">✕</button>` : ""}
+    `;
+    box.appendChild(row);
+  });
+}
+
+function pkAddLane() {
+  if (pkLanes.length >= 5) { alert("Tối đa 5 lane!"); return; }
+  pkLanes.push({
+    name: `Lane ${pkLanes.length + 1}`,
+    trigger_gift_id: "",
+    trigger_gift_name: "",
+    color: PK_COLORS[pkLanes.length] || "#aaa"
+  });
+  renderPkInputs();
+}
+
+function pkRemoveLane(i) {
+  pkLanes.splice(i, 1);
+  renderPkInputs();
+}
+
+function pkSetup() {
+  const valid = pkLanes.filter(l => l.name.trim());
+  if (valid.length < 2) { alert("Cần ít nhất 2 lane!"); return; }
+  post("/api/pk/setup", { lanes: valid }).then(() => {
+    document.getElementById("btnPkStop").disabled  = false;
+    document.getElementById("btnPkReset").disabled = false;
+  });
+}
+
+function pkStop() {
+  if (!confirm("Dừng PK?")) return;
+  post("/api/pk/stop").then(() => {
+    document.getElementById("btnPkStop").disabled  = true;
+    document.getElementById("btnPkReset").disabled = true;
+  });
+}
+
+function pkResetScores() {
+  if (!confirm("Reset điểm tất cả lane về 0?")) return;
+  post("/api/pk/reset_scores");
+}
+
+function pkAddScore(laneId, delta) {
+  post(`/api/pk/lane/${laneId}/score`, { delta });
+}
+
+function renderPkState(pkState) {
+  if (!pkState) return;
+
+  // Status bar
+  const bar = document.getElementById("pk-status-bar");
+  if (pkState.active && pkState.lanes && pkState.lanes.length > 0) {
+    const total = pkState.lanes.reduce((s, l) => s + l.score, 0);
+    bar.textContent = `⚔️ PK đang chạy — ${pkState.lanes.length} lane — Tổng: ${total.toLocaleString()} 💎`;
+    bar.style.background = "#1a3a1a";
+    bar.style.color = "#6ddb6d";
+  } else {
+    bar.textContent = "PK chưa kích hoạt";
+    bar.style.background = "#2a2a35";
+    bar.style.color = "#aaa";
+  }
+
+  // Scores box
+  const scoresBox = document.getElementById("pk-scores-box");
+  const ctrlBox   = document.getElementById("pk-lane-controls");
+
+  if (pkState.active && pkState.lanes && pkState.lanes.length > 0) {
+    scoresBox.style.display = "block";
+    document.getElementById("btnPkStop").disabled  = false;
+    document.getElementById("btnPkReset").disabled = false;
+
+    // Sắp xếp theo điểm giảm dần để dễ theo dõi
+    const sorted = [...pkState.lanes].sort((a, b) => b.score - a.score);
+    const maxScore = Math.max(1, ...sorted.map(l => l.score));
+
+    ctrlBox.innerHTML = "";
+    sorted.forEach((lane, idx) => {
+      const pct = Math.round((lane.score / maxScore) * 100);
+      const div = document.createElement("div");
+      div.style.cssText = "margin-bottom:8px;";
+      div.innerHTML = `
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+          <div style="width:10px;height:10px;border-radius:2px;background:${lane.color};flex-shrink:0;"></div>
+          <span style="font-size:13px;font-weight:700;flex:1;">${idx === 0 ? "🥇 " : idx === 1 ? "🥈 " : "🥉 "}${lane.name}</span>
+          <span style="font-size:13px;font-weight:700;color:#ffe066;">${lane.score.toLocaleString()} 💎</span>
+          <button onclick="pkAddScore('${lane.id}',-100)" style="font-size:10px;padding:2px 5px;">-100</button>
+          <button onclick="pkAddScore('${lane.id}',100)"  style="font-size:10px;padding:2px 5px;">+100</button>
+        </div>
+        <div style="background:#333;border-radius:4px;height:6px;overflow:hidden;">
+          <div style="height:100%;width:${pct}%;background:${lane.color};border-radius:4px;transition:width 0.4s;"></div>
+        </div>
+        <div style="display:flex;gap:4px;margin-top:3px;flex-wrap:wrap;">
+          <span style="font-size:10px;color:#888;">Gift trigger: <b style="color:#ccc;">${lane.trigger_gift_name || "—"}</b> (ID: ${lane.trigger_gift_id || "—"})</span>
+        </div>
+      `;
+      ctrlBox.appendChild(div);
+    });
+
+    // Danh sách viewer đang vote
+    const vl = pkState.viewer_lane;
+    const vlEntries = Object.entries(vl || {});
+    if (vlEntries.length > 0) {
+      const laneMap = {};
+      (pkState.lanes || []).forEach(l => laneMap[l.id] = l.name);
+      const summary = document.createElement("div");
+      summary.style.cssText = "font-size:11px;color:#888;margin-top:6px;border-top:1px solid #333;padding-top:6px;";
+      summary.innerHTML = `<b>Viewer đang vote (${vlEntries.length}):</b><br>` +
+        vlEntries.slice(-10).map(([uid, lid]) =>
+          `<span style="margin-right:6px;">${uid} → ${laneMap[lid] || lid}</span>`
+        ).join("");
+      ctrlBox.appendChild(summary);
+    }
+  } else {
+    scoresBox.style.display = "none";
+  }
+}
+
 </script>
 </body>
 </html>
