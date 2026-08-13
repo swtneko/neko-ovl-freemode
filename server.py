@@ -40,11 +40,14 @@ state = {
         "running": False,
         "finished": False,
     },
-    # Chế độ nhận điểm
-    # mode: "auto" = timer điều khiển bật/tắt nhận điểm
-    #       "manual" = bấm tay bật/tắt
-    "gift_mode": "auto",       # "auto" | "manual"
-    "accepting_gifts": False,  # True = đang nhận điểm từ gift
+    "gift_mode": "auto",
+    "accepting_gifts": False,
+    # ── PK MODE ──────────────────────────────────────────────────────────────
+    "pk": {
+        "active": False,          # True = đang ở chế độ PK
+        "lanes": [],              # [{id, name, score, trigger_gift_id, trigger_gift_name, color}]
+        "viewer_lane": {},        # user_id → lane_id (ai đang vote cho lane nào)
+    },
 }
 
 sockets: list[WebSocket] = []
@@ -125,21 +128,58 @@ async def connect_room(unique_id: str):
 
     @client.on(GiftEvent)
     async def on_gift(event: GiftEvent):
-        # Chỉ cộng điểm khi đang trong trạng thái accepting_gifts
         if not state["accepting_gifts"]:
             return
-        # Bỏ qua sự kiện giữa chừng của streak (chờ event cuối cùng)
         if event.streaking:
             return
 
         repeat_count = event.repeat_count or 1
         diamond_count = event.gift.diamond_count if event.gift else 0
         diamonds = repeat_count * diamond_count
+        if diamonds <= 0:
+            return
 
+        gift_id = str(event.gift.id) if event.gift else ""
+        user_id = str(event.user.unique_id) if event.user else ""
+
+        pk = state["pk"]
+
+        # ── PK MODE: routing quà theo icon ──────────────────────────────
+        if pk["active"] and pk["lanes"]:
+            # Kiểm tra xem gift này có phải trigger icon của lane nào không
+            trigger_lane = next(
+                (l for l in pk["lanes"] if str(l.get("trigger_gift_id", "")) == gift_id and gift_id),
+                None
+            )
+            if trigger_lane:
+                # Viewer chọn lane → ghi nhận, KHÔNG cộng điểm cho lần thả icon này
+                pk["viewer_lane"][user_id] = trigger_lane["id"]
+                await broadcast_state()
+                return
+
+            # Tìm lane viewer đang vote
+            lane_id = pk["viewer_lane"].get(user_id)
+            lane = next((l for l in pk["lanes"] if l["id"] == lane_id), None)
+            if lane is None:
+                # Viewer chưa chọn lane → vào lane đầu tiên mặc định
+                lane = pk["lanes"][0]
+                pk["viewer_lane"][user_id] = lane["id"]
+
+            lane["score"] += diamonds
+            await broadcast_state()
+            await broadcast_event({
+                "type": "pk_gift",
+                "lane": lane["name"],
+                "lane_id": lane["id"],
+                "user": user_id,
+                "diamonds": diamonds,
+            })
+            return
+
+        # ── NORMAL MODE ─────────────────────────────────────────────────
         active = get_active_idol()
-        if active is not None and diamonds > 0:
+        if active is not None:
             active["score"] += diamonds
-            # Broadcast state + gift event cho overlay popup
             await broadcast_state()
             await broadcast_event({
                 "type": "gift",
@@ -510,6 +550,77 @@ async def api_reset_all():
     state["accepting_gifts"] = False
     await broadcast_state()
     return {"ok": True}
+
+
+# --- PK Mode ---
+
+class PKLaneIn(BaseModel):
+    name: str
+    trigger_gift_id: str   # Gift ID dùng để chọn lane (lấy từ TikTok gift list)
+    trigger_gift_name: str # Tên gift để hiển thị
+    color: str = "#4e9af1"
+
+class PKLanesIn(BaseModel):
+    lanes: list[PKLaneIn]
+
+@app.post("/api/pk/setup")
+async def api_pk_setup(body: PKLanesIn):
+    """Tạo các lane PK (3-5 lane), xoá lane cũ"""
+    lanes = []
+    for i, l in enumerate(body.lanes[:5]):
+        lanes.append({
+            "id": uuid.uuid4().hex[:6],
+            "name": l.name,
+            "score": 0,
+            "trigger_gift_id": l.trigger_gift_id.strip(),
+            "trigger_gift_name": l.trigger_gift_name.strip(),
+            "color": l.color,
+            "rank": i + 1,
+        })
+    state["pk"]["lanes"] = lanes
+    state["pk"]["viewer_lane"] = {}
+    state["pk"]["active"] = True
+    await broadcast_state()
+    return {"ok": True}
+
+@app.post("/api/pk/reset_scores")
+async def api_pk_reset_scores():
+    """Reset điểm tất cả lane về 0"""
+    for l in state["pk"]["lanes"]:
+        l["score"] = 0
+    state["pk"]["viewer_lane"] = {}
+    await broadcast_state()
+    return {"ok": True}
+
+@app.post("/api/pk/stop")
+async def api_pk_stop():
+    """Tắt PK mode"""
+    state["pk"]["active"] = False
+    await broadcast_state()
+    return {"ok": True}
+
+@app.post("/api/pk/start")
+async def api_pk_start():
+    """Bật lại PK mode (đã setup rồi)"""
+    if state["pk"]["lanes"]:
+        state["pk"]["active"] = True
+        await broadcast_state()
+    return {"ok": True}
+
+class PKScoreIn(BaseModel):
+    delta: int
+
+@app.post("/api/pk/lane/{lane_id}/score")
+async def api_pk_lane_score(lane_id: str, body: PKScoreIn):
+    lane = next((l for l in state["pk"]["lanes"] if l["id"] == lane_id), None)
+    if lane:
+        lane["score"] = max(0, lane["score"] + body.delta)
+        await broadcast_state()
+    return {"ok": True}
+
+@app.get("/overlay/pk")
+async def overlay_pk_page():
+    return FileResponse("static/overlay_pk.html")
 
 
 if __name__ == "__main__":
