@@ -796,6 +796,27 @@ function render(){
   const maxScore=Math.max(1,...idols.map(i=>i.score));
 
   const list=document.getElementById("idolList");
+
+  // Nếu đang có input trong idolList đang được focus → chỉ update score/bar, không rebuild DOM
+  const active = document.activeElement;
+  const isTypingInList = active && active.tagName === "INPUT" && list.contains(active);
+
+  if (isTypingInList) {
+    // Chỉ update score + bar fill cho từng idol, không đụng DOM input
+    const maxScore = Math.max(1, ...idols.map(i => i.score));
+    idols.forEach(idol => {
+      // Update score text
+      const card = list.querySelector(`[data-id="${idol.id}"]`);
+      if (!card) return;
+      const scoreEl = card.querySelector(".idol-score");
+      if (scoreEl) scoreEl.textContent = idol.score.toLocaleString() + " 💎";
+      const barFill = card.querySelector(".idol-bar-fill");
+      if (barFill) barFill.style.width = (idol.score / maxScore * 100) + "%";
+    });
+    renderTarget();
+    return;
+  }
+
   list.innerHTML="";
   idols.forEach((idol,i)=>{
     const inputId="pts_"+idol.id;
@@ -806,6 +827,7 @@ function render(){
     if(idol.eliminated) cardCls+=" eliminated";
     card.className=cardCls;
     card.dataset.name=idol.name.toLowerCase();
+    card.dataset.id=idol.id;
 
     const top=document.createElement("div"); top.className="idol-top";
 
