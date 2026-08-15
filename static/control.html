@@ -186,6 +186,7 @@
       <div class="tabs">
         <div class="tab-btn on"  onclick="switchTab('single')" data-i18n="tab_single">Thêm 1</div>
         <div class="tab-btn"     onclick="switchTab('batch')" data-i18n="tab_batch">Hàng loạt</div>
+        <div class="tab-btn"     onclick="switchTab('io')" data-i18n="tab_io">Import/Export</div>
       </div>
       <div class="tab-body">
         <div id="tab-single" class="tab-panel on">
@@ -201,6 +202,15 @@
           <div class="row" style="margin-top:6px;margin-bottom:0;">
             <button onclick="addBatch()" data-i18n="btn_add_batch">➕ Thêm tất cả</button>
             <span id="batchStatus" class="status ok"></span>
+          </div>
+        </div>
+        <div id="tab-io" class="tab-panel">
+          <p class="hint" data-i18n="io_hint">Định dạng: name|score|link avatar (mỗi dòng 1 idol)</p>
+          <textarea id="ioData" rows="5" placeholder="Idol A|1000|https://link-avatar-a.jpg&#10;Idol B|500|&#10;Idol C|200"></textarea>
+          <div class="row" style="margin-top:6px;margin-bottom:0;">
+            <button onclick="importIdols()" class="btn-green" data-i18n="btn_import">📥 Import</button>
+            <button onclick="exportIdols()" class="btn-teal" data-i18n="btn_export">📤 Export</button>
+            <span id="ioStatus" class="status ok"></span>
           </div>
         </div>
       </div>
@@ -378,6 +388,11 @@ const i18n = {
     search_ph: "🔍 Tìm idol...",
     tab_single: "Thêm 1",
     tab_batch: "Hàng loạt",
+    tab_io: "Import/Export",
+    io_hint: "Định dạng: name|score|link avatar (mỗi dòng 1 idol)",
+    btn_import: "📥 Import",
+    btn_export: "📤 Export",
+    msg_import_ok: "✔ Đã import thành công!",
     idol_name_ph: "Tên idol",
     btn_add: "➕ Thêm",
     avatar_ph: "Link ảnh avatar (tuỳ chọn)",
@@ -459,6 +474,11 @@ const i18n = {
     search_ph: "🔍 Search idol...",
     tab_single: "Single",
     tab_batch: "Batch",
+    tab_io: "Import/Export",
+    io_hint: "Format: name|score|avatar_link (one per line)",
+    btn_import: "📥 Import",
+    btn_export: "📤 Export",
+    msg_import_ok: "✔ Imported successfully!",
     idol_name_ph: "Idol name",
     btn_add: "➕ Add",
     avatar_ph: "Avatar link (optional)",
@@ -605,7 +625,7 @@ function setDuration() {
 }
 
 function switchTab(name) {
-  document.querySelectorAll(".tab-btn").forEach((b,i)=>b.classList.toggle("on",["single","batch"][i]===name));
+  document.querySelectorAll(".tab-btn").forEach((b,i)=>b.classList.toggle("on",["single","batch","io"][i]===name));
   document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("on"));
   document.getElementById("tab-"+name).classList.add("on");
 }
@@ -624,6 +644,51 @@ function addBatch() {
     setTimeout(()=>document.getElementById("batchStatus").textContent="",3000);
   });
 }
+
+async function importIdols() {
+  const text = document.getElementById("ioData").value.trim();
+  if (!text) return;
+
+  const lines = text.split("\n");
+  let count = 0;
+
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    const parts = line.split("|").map(s => s.trim());
+    const name = parts[0];
+    const score = parseInt(parts[1], 10) || 0;
+    const avatar = parts[2] || "";
+
+    if (name) {
+      // 1. Tạo idol mới
+      const res = await post("/api/idol", { name, avatar });
+      const data = await res.json();
+      
+      // 2. Cập nhật điểm ban đầu
+      if (data && data.id && score > 0) {
+        await post("/api/idol/" + data.id + "/set_score", { score });
+      } else if (score > 0) {
+        const created = state && state.idols ? state.idols.find(i => i.name === name) : null;
+        if (created) {
+          await post("/api/idol/" + created.id + "/set_score", { score });
+        }
+      }
+      count++;
+    }
+  }
+
+  const statusEl = document.getElementById("ioStatus");
+  statusEl.textContent = (i18n[currentLang].msg_import_ok || "✔ OK") + " (" + count + ")";
+  setTimeout(() => statusEl.textContent = "", 3000);
+}
+
+function exportIdols() {
+  if (!state || !state.idols || !state.idols.length) return;
+  
+  const lines = state.idols.map(i => `${i.name}|${i.score}|${i.avatar || ""}`);
+  document.getElementById("ioData").value = lines.join("\n");
+}
+
 function removeIdol(id,name){ if(confirm(i18n[currentLang].confirm_del_single + name + "?")) fetch("/api/idol/"+id,{method:"DELETE"}); }
 
 window._selectMode = false;
