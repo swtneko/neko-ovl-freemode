@@ -210,26 +210,74 @@ function render() {
   const sessionBase = idol ? (idol.session_base || 0) : 0;
   const sessionScore = Math.max(0, totalScore - sessionBase);
 
-  const barWrapEl = document.getElementById("w-bar-wrap");
-  if (barWrapEl) {
-    barWrapEl.setAttribute("data-left", sessionScore.toLocaleString());
-  }
-
   // 3. Đồng hồ / trạng thái
   const timeBoxEl = document.getElementById("w-time-box");
   const barEl = document.getElementById("w-bar");
+  const barWrap = document.getElementById("w-bar-wrap");
 
-  if (t.finished) {
-    timeBoxEl.classList.add("success");
-    timeBoxEl.textContent = "Thành công";
-    if (barEl) barEl.style.width = "100%";
+  const tgt = state.target || { enabled: false };
+
+  if (tgt.enabled) {
+    // ==== CHẾ ĐỘ MỤC TIÊU ĐIỂM ====
+    const over = Math.max(0, sessionScore - tgt.score);
+    const pct = tgt.score > 0 ? Math.min(100, (sessionScore / tgt.score) * 100) : 0;
+
+    if (tgt.reached) {
+      // Đã đạt — bar hồng over, OVER+X
+      if (barWrap) {
+        barWrap.classList.remove("unlimit");
+        barWrap.classList.add("over");
+        barWrap.setAttribute("data-left", sessionScore.toLocaleString());
+        barWrap.setAttribute("data-right", "OVER+" + over.toLocaleString());
+      }
+      if (barEl) barEl.style.width = "100%";
+      // Timer trắng bình thường, chỉ hiện "Thanh cong" khi het gio
+      if (t.finished) {
+        timeBoxEl.className = "widget-freemode-time success";
+        timeBoxEl.textContent = "Thành công";
+      } else {
+        timeBoxEl.className = "widget-freemode-time";
+        timeBoxEl.innerHTML = `<span id="w-timer">${fmtTime(t.remaining)}</span>`;
+      }
+    } else {
+      // Chưa đạt — bar xanh tiến dần
+      if (barWrap) {
+        barWrap.classList.remove("unlimit");
+        barWrap.classList.remove("over");
+        barWrap.setAttribute("data-left", sessionScore.toLocaleString());
+        barWrap.setAttribute("data-right", tgt.score.toLocaleString());
+      }
+      if (barEl) barEl.style.width = pct + "%";
+      if (t.finished) {
+        // Het gio chua dat → That bai do
+        timeBoxEl.className = "widget-freemode-time fail";
+        timeBoxEl.textContent = "Thất bại";
+      } else {
+        timeBoxEl.className = "widget-freemode-time";
+        timeBoxEl.innerHTML = `<span id="w-timer">${fmtTime(t.remaining)}</span>`;
+      }
+    }
   } else {
-    timeBoxEl.classList.remove("success");
-    timeBoxEl.innerHTML = `<span id="w-timer">${fmtTime(t.remaining)}</span>`;
+    // ==== CHẾ ĐỘ THƯỜNG (timer) ====
+    if (barWrap) {
+      barWrap.classList.add("unlimit");
+      barWrap.classList.remove("over");
+      barWrap.setAttribute("data-left", sessionScore.toLocaleString());
+      barWrap.setAttribute("data-right", "OVER+1");
+    }
 
-    const elapsed = t.duration - t.remaining;
-    const pct = t.duration > 0 ? Math.min(100, (elapsed / t.duration) * 100) : 0;
-    if (barEl) barEl.style.width = pct + "%";
+    if (t.finished) {
+      timeBoxEl.classList.add("success");
+      timeBoxEl.textContent = "Thành công";
+      if (barEl) barEl.style.width = "100%";
+    } else {
+      timeBoxEl.classList.remove("success");
+      timeBoxEl.innerHTML = `<span id="w-timer">${fmtTime(t.remaining)}</span>`;
+
+      const elapsed = t.duration - t.remaining;
+      const pct = t.duration > 0 ? Math.min(100, (elapsed / t.duration) * 100) : 0;
+      if (barEl) barEl.style.width = pct + "%";
+    }
   }
 }
 
@@ -243,6 +291,17 @@ function connect() {
       if (msg.type === "state") {
         state = msg.data;
         render();
+      } else if (msg.type === "target_reached") {
+        // Flash hiệu ứng khi đạt mục tiêu (state sẽ được update ngay sau đó)
+        const timeBoxEl = document.getElementById("w-time-box");
+        if (timeBoxEl) {
+          timeBoxEl.className = "widget-freemode-time success";
+          timeBoxEl.textContent = "Thành công 🎉";
+        }
+        const barWrap = document.getElementById("w-bar-wrap");
+        if (barWrap) barWrap.classList.add("over");
+        const barEl = document.getElementById("w-bar");
+        if (barEl) barEl.style.width = "100%";
       }
     } catch (e) {
       console.error("Lỗi parse WebSocket data:", e);
