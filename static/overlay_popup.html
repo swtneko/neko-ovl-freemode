@@ -115,7 +115,31 @@
   <!-- 👇 DÁN CSS TÙY CHỈNH CỦA BẠN VÀO ĐÂY (sẽ đè lên CSS ở trên) 👇 -->
   <!-- ============================================================ -->
   <style id="custom-css">
-
+    /* Fix căn giữa tên idol */
+    .widget-freemode-nick {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .widget-freemode-nick .marquee {
+      position: static !important;
+      top: unset !important;
+      left: unset !important;
+      transform: none !important;
+      transform-origin: unset !important;
+      width: 100% !important;
+      height: 100% !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      font-size: 7px;
+      font-weight: bold;
+      color: #fff;
+      text-align: center;
+    }
+    .widget-freemode-nick .marquee .mca-marquee-track {
+      justify-content: center;
+    }
   </style>
 
 </head>
@@ -267,11 +291,11 @@ function render() {
     }
 
     if (t.finished) {
-      timeBoxEl.classList.add("success");
+      timeBoxEl.className = "widget-freemode-time success";
       timeBoxEl.textContent = "Thành công";
       if (barEl) barEl.style.width = "100%";
     } else {
-      timeBoxEl.classList.remove("success");
+      timeBoxEl.className = "widget-freemode-time";
       timeBoxEl.innerHTML = `<span id="w-timer">${fmtTime(t.remaining)}</span>`;
 
       const elapsed = t.duration - t.remaining;
