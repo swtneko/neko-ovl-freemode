@@ -115,17 +115,30 @@
   <!-- 👇 DÁN CSS TÙY CHỈNH CỦA BẠN VÀO ĐÂY (sẽ đè lên CSS ở trên) 👇 -->
   <!-- ============================================================ -->
   <style id="custom-css">
-    /* Marquee căn giữa, overflow ẩn */
+    /* Fix căn giữa tên idol */
+    .widget-freemode-nick {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
     .widget-freemode-nick .marquee {
+      position: static !important;
+      top: unset !important;
+      left: unset !important;
+      transform: none !important;
+      transform-origin: unset !important;
+      width: 100% !important;
+      height: 100% !important;
       display: flex !important;
       align-items: center !important;
       justify-content: center !important;
-      overflow: hidden !important;
-      width: 100% !important;
+      font-size: 7px;
+      font-weight: bold;
+      color: #fff;
+      text-align: center;
     }
-    /* Tên ngắn center, tên dài scroll từ đầu */
     .widget-freemode-nick .marquee .mca-marquee-track {
-      justify-content: flex-start !important;
+      justify-content: center;
     }
   </style>
 
@@ -170,20 +183,15 @@ function fmtTime(sec) {
 function mcaInitMarquee(marqueeEl, text) {
   if (!marqueeEl) return;
   marqueeEl.innerHTML = "";
-
-  // Đo text thật sự bằng canvas (không bị ảnh hưởng bởi scale/transform)
-  const fontSize = 10; // font-size thật của marquee (20px * scale 0.5)
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  ctx.font = `bold ${fontSize}px 'SF Pro Text', sans-serif`;
-  const textWidth = ctx.measureText(text).width;
-
-  // Chiều rộng thật của ô đen nick box (86px theo CSS gốc, trừ padding)
-  const nickBox = marqueeEl.closest(".widget-freemode-nick");
-  const boxWidth = nickBox ? nickBox.offsetWidth : 86;
-
-  if (textWidth > boxWidth) {
-    // Tên dài → scroll
+  const probe = document.createElement("span");
+  probe.textContent = text;
+  probe.style.whiteSpace = "nowrap";
+  probe.style.display = "inline-block";
+  marqueeEl.appendChild(probe);
+  const boxWidth = marqueeEl.clientWidth;
+  const textWidth = probe.scrollWidth;
+  if (boxWidth > 0 && textWidth > boxWidth) {
+    marqueeEl.innerHTML = "";
     const track = document.createElement("div");
     track.className = "mca-marquee-track";
     [1, 2].forEach(() => {
@@ -194,16 +202,16 @@ function mcaInitMarquee(marqueeEl, text) {
       track.appendChild(span);
       track.appendChild(gap);
     });
-    const speed = 28;
+    const speed = 28; // px/giây (chạy chậm & êm hơn)
     const duration = Math.max(5, (textWidth + 32) / speed);
     track.style.animationDuration = duration + "s";
     marqueeEl.appendChild(track);
   } else {
-    // Tên ngắn → hiện giữa
-    const inner = document.createElement("span");
-    inner.textContent = text;
-    inner.style.cssText = "display:block; width:100%; text-align:center; white-space:nowrap;";
-    marqueeEl.appendChild(inner);
+    // Tên ngắn: giữ inline, căn giữa dọc qua flexbox của cha
+    probe.style.position = "static";
+    probe.style.top = "";
+    probe.style.left = "";
+    probe.style.transform = "";
   }
 }
 
