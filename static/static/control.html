@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Điều khiển Overlay</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; }
+  body { font-family: Arial, sans-serif; background: #1b1b1f; color: #eee; margin: 0; padding: 10px; }
+
+  .layout { display: flex; gap: 10px; align-items: flex-start; flex-direction: row !important; }
+  .col-idol  { flex: 1; min-width: 0; }
+  .col-ctrl  { flex: 1; min-width: 0; position: sticky; top: 0; max-height: 100vh; overflow-y: auto; }
+
+  h2 { margin: 0 0 9px; border-bottom: 1px solid #2e2e38; padding-bottom: 5px; font-size: 13px; color: #bbb; text-transform: uppercase; letter-spacing: .5px; }
+  .section { background: #222228; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+
+  input, button, textarea, select { font-size: 12px; padding: 6px 8px; border-radius: 6px; border: 1px solid #444; }
+  input, textarea, select { background: #2a2a30; color: #eee; }
+  button { background: #3a3a44; color: #eee; cursor: pointer; white-space: nowrap; }
+  button:hover { background: #4a4a56; }
+  button:disabled { opacity: .35; cursor: default; }
+  textarea { resize: vertical; width: 100%; }
+  .row { display: flex; gap: 6px; margin-bottom: 7px; flex-wrap: wrap; align-items: center; }
+  .hint { opacity: .45; font-size: 11px; margin: 3px 0 6px; }
+  .status { font-size: 12px; }
+  .small { font-size: 11px; opacity: .8; }
+  .avatar-preview { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #333; flex: none; display: none; border: 1px solid #555; }
+  .avatar-preview.show { display: block; }
+  .ok  { color: #6fdc6f; } .bad { color: #e06666; }
+
+  .lang-switcher { display: flex; gap: 4px; background: #1a1a20; padding: 2px; border-radius: 6px; border: 1px solid #3a3a44; }
+  .lang-btn { font-size: 10px; padding: 2px 6px; border-radius: 4px; border: none; background: transparent; color: #888; cursor: pointer; }
+  .lang-btn.active { background: #7c5cbf; color: #fff; font-weight: bold; }
+
+  .tabs { display: flex; }
+  .tab-btn { padding: 4px 10px; border: 1px solid #444; border-bottom: none; border-radius: 6px 6px 0 0;
+             background: #1e1e26; color: #999; cursor: pointer; font-size: 11px; }
+  .tab-btn.on { background: #2e2e3a; color: #fff; font-weight: bold; }
+  .tab-body { border: 1px solid #444; border-radius: 0 6px 6px 6px; padding: 8px; margin-bottom: 10px; }
+  .tab-panel { display: none; }
+  .tab-panel.on { display: block; }
+
+  #searchWrap { position: relative; margin-bottom: 8px; }
+  #searchInput { width: 100%; padding-right: 28px; }
+  #searchClear { position: absolute; right: 6px; top: 50%; transform: translateY(-50%);
+                 background: none; border: none; color: #888; cursor: pointer; font-size: 15px; padding: 0; }
+  #searchClear:hover { color: #eee; }
+
+  .idol-card { background: #2a2a34; border-radius: 8px; padding: 8px 10px; margin-bottom: 7px; transition: opacity .15s; }
+  .idol-card.active { outline: 2px solid #ffd54a; }
+  .idol-card.hidden { display: none; }
+  .idol-card.eliminated { opacity: 0.45; background: #28202a; }
+  .out-badge { background: #e06666; color: #fff; font-size: 10px; font-weight: bold; border-radius: 4px; padding: 1px 4px; letter-spacing: 1px; flex-shrink: 0; }
+  .btn-orange { background: #5a2e00 !important; border-color: #f0883e !important; color: #ffc07a !important; }
+  .btn-orange:hover { background: #6b3800 !important; }
+  .btn-teal   { background: #004a3a !important; border-color: #00bfa5 !important; color: #7fffd4 !important; }
+  .btn-teal:hover   { background: #005a46 !important; }
+  .idol-top { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 5px; }
+  .idol-rank { width: 20px; font-size: 14px; font-weight: bold; text-align: center; color: #999; flex-shrink:0; }
+  .idol-av { width: 32px; height: 32px; border-radius: 50%; background: #555; display: flex; align-items: center;
+             justify-content: center; font-weight: bold; font-size: 12px; flex-shrink:0;
+             border: 2px solid rgba(255,255,255,.2); background-size: cover; background-position: center; }
+  .idol-name  { font-weight: bold; font-size: 14px; flex: 1; word-break: break-word; }
+  .idol-score { color: #ffc371; font-weight: bold; font-size: 13px; }
+  .idol-bot { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; margin-top: 5px; }
+  .idol-bot input[type=number] { width: 65px; }
+  .idol-bar-bg { height: 4px; background: rgba(255,255,255,.1); border-radius: 2px; margin: 5px 0 0; overflow: hidden; }
+  .idol-bar-fill { height: 100%; background: linear-gradient(90deg,#ff5f6d,#ffc371); border-radius: 2px; transition: width .4s; }
+
+  #giftBox { border-radius: 8px; padding: 8px; }
+  #giftBox.on  { background: #1a3a1a; border: 2px solid #6fdc6f; }
+  #giftBox.off { background: #252525; border: 2px solid #383838; }
+
+  #targetBox.on      { background: #1e1a30; border: 2px solid #9d73f7; }
+  #targetBox.off     { background: #252525; border: 2px solid #383838; }
+  #targetBox.reached { background: #1a3020; border: 2px solid #ffd54a; }
+  #targetStatus.ok   { color: #ffd54a; }
+  #targetStatus.wait { color: #9d73f7; }
+  #giftStatus  { font-size: 13px; font-weight: bold; text-align: center; margin-bottom: 6px; }
+  #giftStatus.on  { color: #6fdc6f; }
+  #giftStatus.off { color: #666; }
+
+  #timerBig { font-size: 24px; font-weight: bold; text-align: center; margin: 4px 0 6px; letter-spacing: 1px; }
+  .timer-btns { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; margin-bottom: 6px; }
+
+  .btn-green  { background: #1e5c1e !important; border-color: #4caf50 !important; color: #8fef8f !important; }
+  .btn-green:hover  { background: #276b27 !important; }
+  .btn-red    { background: #5c1e1e !important; border-color: #e06666 !important; color: #ef9f9f !important; }
+  .btn-red:hover    { background: #6b2727 !important; }
+  .btn-yellow { background: #4a3a00 !important; border-color: #ffd54a !important; color: #ffe57a !important; }
+
+  .ov-links { display: flex; flex-direction: column; gap: 8px; }
+  .ov-link { font-size: 10px; background: #2a2a34; border-radius: 6px; padding: 5px 6px;
+             color: #7ec8e3; word-break: break-all; cursor: pointer; }
+  .ov-link:hover { background: #33333e; }
+  .ov-label { font-size: 11px; color: #888; margin-bottom: 3px; display: flex; align-items: center; justify-content: space-between; }
+  .dim-badge { background: #3a3a48; color: #ffc371; border: 1px solid #5a5a6e; font-size: 10px; padding: 1px 5px; border-radius: 4px; font-family: monospace; }
+
+  .sp-box { background: #2a2a34; border-radius: 8px; overflow: hidden; font-size: 12px; }
+  .sp-header { background: #7c5cbf; padding: 8px 10px; font-weight: bold; color: #fff; display: flex; justify-content: space-between; align-items: center; }
+  .sp-body { padding: 10px; }
+  .sp-title-sec { color: #aaa; font-size: 11px; font-weight: bold; margin: 10px 0 5px 0; }
+  .sp-title-sec:first-child { margin-top: 0; }
+  .sp-row { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; flex-wrap: wrap; }
+  .sp-row label { color: #ddd; min-width: 90px; }
+  .sp-row input[type=number] { width: 50px; padding: 3px 5px; border-radius: 4px; }
+  .sp-row input[type=text] { border-radius: 4px; padding: 3px 6px; }
+  .sp-row input[type=checkbox] { width: 14px; height: 14px; accent-color: #7c5cbf; cursor: pointer; }
+  .radio-grp { display: flex; gap: 8px; }
+  .radio-grp label { display: flex; align-items: center; gap: 3px; min-width: auto; cursor: pointer; }
+  .radio-grp input[type=radio] { accent-color: #7c5cbf; cursor: pointer; }
+  .btn-purple { background: #7c5cbf; color: #fff; border: none; font-size: 11px; padding: 4px 8px; border-radius: 4px; }
+
+  .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider-sw { position: absolute; cursor: pointer; inset: 0; background-color: #555; transition: .3s; border-radius: 20px; }
+  .slider-sw:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+  input:checked + .slider-sw { background-color: #9d73f7; }
+  input:checked + .slider-sw:before { transform: translateX(16px); }
+
+  @media (max-width: 750px) {
+    body { padding: 4px; }
+    .layout { gap: 6px !important; }
+    .section { padding: 8px !important; margin-bottom: 6px !important; }
+    h2 { font-size: 11px !important; margin-bottom: 6px !important; }
+    input, button, textarea, select { font-size: 11px !important; padding: 4px 6px !important; }
+    .idol-card { padding: 6px 8px !important; }
+    .idol-name { font-size: 13px !important; }
+    .idol-score { font-size: 12px !important; }
+    .idol-bot input[type=number] { width: 50px !important; }
+    .sp-row label { min-width: 80px !important; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ===== TRÁI: List Idol ===== -->
+  <div class="col-idol">
+    <div class="section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;gap:6px;flex-wrap:wrap;">
+        <h2 style="margin:0;" data-i18n="idol_title">Idol</h2>
+        <div style="display:flex;gap:4px;align-items:center;flex-wrap:wrap;">
+          <button id="btnSelectMode" onclick="toggleSelectMode()" style="font-size:11px;background:#444;color:#eee;border:1px solid #666;" data-i18n="select_btn">☑ Chọn</button>
+          <span id="selectActions" style="display:none;gap:4px;">
+            <button onclick="selectAll()" style="font-size:11px;background:#333;color:#ccc;border:1px solid #555;" data-i18n="select_all">Tất</button>
+            <button onclick="deselectAll()" style="font-size:11px;background:#333;color:#ccc;border:1px solid #555;" data-i18n="deselect">Bỏ</button>
+            <button id="btnDeleteSelected" onclick="deleteSelected()" style="font-size:11px;" class="btn-red" data-i18n="del_selected">🗑 Xóa chọn</button>
+          </span>
+          <button onclick="deleteAllIdols()" style="font-size:11px;" class="btn-red" data-i18n="del_all">🗑 Xóa tất</button>
+        </div>
+      </div>
+      <div id="idolList"></div>
+    </div>
+  </div>
+
+  <!-- ===== PHẢI: Search + Thêm + Điều khiển ===== -->
+  <div class="col-ctrl">
+
+    <div class="section">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom: 1px solid #2e2e38; padding-bottom: 5px; margin-bottom: 9px;">
+        <h2 style="margin:0; border:none; padding:0;" data-i18n="add_idol_title">Thêm Idol</h2>
+        <div class="lang-switcher">
+          <button class="lang-btn active" id="lang-vi" onclick="setLang('vi')">VN</button>
+          <button class="lang-btn" id="lang-en" onclick="setLang('en')">EN</button>
+        </div>
+      </div>
+
+      <div id="searchWrap">
+        <input id="searchInput" placeholder="🔍 Tìm idol..." data-i18n-ph="search_ph" oninput="filterIdols(this.value)">
+        <button id="searchClear" onclick="clearSearch()" title="Xoá tìm kiếm">✕</button>
+      </div>
+      <div class="row" style="margin-bottom:9px;">
+        <button type="button" onclick="fillMissingAvatars()" data-i18n="btn_fill_avatars">🔄 Tìm avatar còn thiếu</button>
+        <span id="fillAvatarsStatus" class="small"></span>
+      </div>
+
+      <div class="tabs">
+        <div class="tab-btn on"  onclick="switchTab('single')" data-i18n="tab_single">Thêm 1</div>
+        <div class="tab-btn"     onclick="switchTab('batch')" data-i18n="tab_batch">Hàng loạt</div>
+        <div class="tab-btn"     onclick="switchTab('io')" data-i18n="tab_io">Import/Export</div>
+      </div>
+      <div class="tab-body">
+        <div id="tab-single" class="tab-panel on">
+          <div class="row">
+            <input id="idolName" placeholder="Tên idol" data-i18n-ph="idol_name_ph" style="flex:1; min-width: 0;">
+            <input id="idolTikTok" placeholder="TikTok ID / @username" data-i18n-ph="tiktok_id_ph" style="flex:1; min-width: 0;"
+                   oninput="clearAvatarPreviewIfEmpty()">
+          </div>
+          <div class="row">
+            <img id="idolAvatarPreview" class="avatar-preview" alt="avatar">
+            <input id="idolAvatar" placeholder="Link ảnh avatar (tuỳ chọn)" data-i18n-ph="avatar_ph" style="flex:1; min-width:0;"
+                   oninput="showAvatarPreview('idolAvatar','idolAvatarPreview')">
+          </div>
+          <div class="row" style="margin-bottom:0;">
+            <button type="button" onclick="checkAvatar()" data-i18n="btn_check_avatar">🔍 Kiểm tra avatar</button>
+            <button onclick="addIdol()" data-i18n="btn_add">➕ Thêm</button>
+            <span id="idolAvatarStatus" class="small"></span>
+          </div>
+        </div>
+        <div id="tab-batch" class="tab-panel">
+          <p class="hint" data-i18n="batch_hint">Mỗi tên một dòng.</p>
+          <textarea id="batchNames" rows="4" placeholder="Idol A&#10;Idol B" data-i18n-ph="batch_ph"></textarea>
+          <div class="row" style="margin-top:6px;margin-bottom:0;">
+            <button onclick="addBatch()" data-i18n="btn_add_batch">➕ Thêm tất cả</button>
+            <span id="batchStatus" class="status ok"></span>
+          </div>
+        </div>
+        <div id="tab-io" class="tab-panel">
+          <p class="hint" data-i18n="io_hint">Định dạng: name|username|score|live/out|link avatar (mỗi dòng 1 idol)</p>
+          <textarea id="ioData" rows="5" placeholder="Idol A|idola_tiktok|1000|live|https://link-avatar-a.jpg&#10;Idol B|idolb_tiktok|500|out|&#10;Idol C||200|live"></textarea>
+          <div class="row" style="margin-top:6px;margin-bottom:0;">
+            <button onclick="importIdols()" class="btn-green" data-i18n="btn_import">📥 Import</button>
+            <button onclick="exportIdols()" class="btn-teal" data-i18n="btn_export">📤 Export</button>
+            <span id="ioStatus" class="status ok"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kết nối -->
+    <div class="section">
+      <h2 data-i18n="tiktok_title">TikTok Live</h2>
+      <div class="row">
+        <input id="roomInput" placeholder="username" style="flex:1; min-width:0;">
+        <button onclick="connectRoom()">▶</button>
+        <button onclick="disconnectRoom()">✕</button>
+      </div>
+      <div id="connStatus" class="status">Chưa kết nối</div>
+    </div>
+
+    <!-- Nhận điểm -->
+    <div class="section">
+      <h2 data-i18n="gift_title">Nhận điểm Gift</h2>
+      <div id="giftBox" class="off">
+        <div id="giftStatus" class="off">⏸ Không nhận</div>
+        <div class="row" style="justify-content:center;margin-bottom:6px;">
+          <button id="btnAuto"   onclick="setMode('auto')"   class="btn-yellow" style="font-size:11px;" data-i18n="auto_mode">🤖 Tự động</button>
+          <button id="btnManual" onclick="setMode('manual')"                     style="font-size:11px;" data-i18n="manual_mode">👆 Thủ công</button>
+        </div>
+        <div id="manualBtns" class="row" style="justify-content:center;display:none;margin-bottom:0;">
+          <button id="btnGiftStart" onclick="giftsStart()" class="btn-green" style="font-size:11px;" data-i18n="btn_start">▶ Bắt đầu</button>
+          <button id="btnGiftStop"  onclick="giftsStop()"  class="btn-red"   style="font-size:11px;" data-i18n="btn_stop">⏹ Dừng</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timer -->
+    <div class="section">
+      <h2 data-i18n="timer_title">Thời gian</h2>
+      <div class="row">
+        <input id="durMin" type="number" min="0" value="5" style="width:40px;"> <span data-i18n="min_unit">p</span>
+        <input id="durSec" type="number" min="0" max="59" value="0" style="width:40px;"> <span data-i18n="sec_unit">g</span>
+        <button onclick="setDuration()" data-i18n="btn_set">Đặt</button>
+      </div>
+      <div id="timerBig">--:--</div>
+      <div class="timer-btns">
+        <button onclick="post('/api/timer/start')"  class="btn-green">▶</button>
+        <button onclick="post('/api/timer/pause')"  >⏸</button>
+        <button onclick="post('/api/timer/reset')"  >⏮</button>
+        <button onclick="post('/api/timer/finish')" class="btn-red">⏹</button>
+      </div>
+      <div style="text-align:center;margin-top:4px;">
+        <button onclick="post('/api/reset_all')" style="font-size:11px;width:100%;" data-i18n="btn_reset_all">🔄 Reset tất cả</button>
+      </div>
+    </div>
+
+    <!-- Mục tiêu điểm -->
+    <div class="section">
+      <h2 data-i18n="target_title">🎯 Mục tiêu điểm</h2>
+      <div id="targetBox" class="off" style="border-radius:8px;padding:8px;">
+        <div class="row" style="align-items:center;margin-bottom:6px;">
+          <label class="switch">
+            <input type="checkbox" id="targetEnabled" onchange="onTargetToggle()">
+            <span class="slider-sw"></span>
+          </label>
+          <span id="targetModeLabel" style="font-size:12px;color:#888;" data-i18n="target_off_label">Tắt</span>
+        </div>
+        <div id="targetConfig" style="display:none;">
+          <div class="row">
+            <span style="font-size:12px;" data-i18n="target_score_lbl">Mục tiêu 💎:</span>
+            <input type="number" id="targetScore" min="1" value="1000" style="width:80px;">
+            <button onclick="applyTarget()" class="btn-green" style="font-size:11px;" data-i18n="target_apply">✔ Áp dụng</button>
+          </div>
+          <div id="targetStatus" style="font-size:13px;font-weight:bold;text-align:center;margin-top:4px;"></div>
+          <div id="targetBar" style="margin-top:6px;">
+            <div style="height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden;">
+              <div id="targetBarFill" style="height:100%;width:0%;background:linear-gradient(90deg,#7c5cbf,#ffd54a);border-radius:3px;transition:width .4s;"></div>
+            </div>
+            <div id="targetBarLabel" style="font-size:11px;color:#888;text-align:right;margin-top:2px;"></div>
+          </div>
+          <div class="row" style="justify-content:center;margin-top:6px;margin-bottom:0;">
+            <button onclick="resetTarget()" style="font-size:11px;width:100%;" data-i18n="target_reset">↺ Reset mục tiêu</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CÀI ĐẶT WIDGET XẾP HẠNG -->
+    <div class="section" style="padding:0; background:transparent;">
+      <div class="sp-box">
+        <div class="sp-header">
+          <span data-i18n="widget_title">Widget Xếp hạng</span>
+          <label class="switch">
+            <input type="checkbox" id="spEnabled" checked onchange="pushSettings()">
+            <span class="slider-sw"></span>
+          </label>
+        </div>
+        
+        <div class="sp-body">
+          <div class="sp-title-sec" data-i18n="basic_setting">Cài đặt cơ bản</div>
+          <div class="sp-row">
+            <label data-i18n="rank_name_lbl">Tên xếp hạng:</label>
+            <input type="text" id="spTitle" value="Danh sách thải" style="width: 80px;" onchange="pushSettings()">
+            <button class="btn-purple" onclick="copyRankName()" style="padding:3px 5px;" data-i18n="btn_copy">🔗 Copy</button>
+          </div>
+
+          <div class="sp-title-sec" data-i18n="sort_sec">Sắp xếp</div>
+          <div class="sp-row">
+            <label data-i18n="order_lbl">Thứ tự:</label>
+            <div class="radio-grp">
+              <label><input type="radio" name="spOrder" value="col" onchange="pushSettings()"> <span data-i18n="ord_col">Dọc</span></label>
+              <label><input type="radio" name="spOrder" value="row" checked onchange="pushSettings()"> <span data-i18n="ord_row">Ngang</span></label>
+            </div>
+          </div>
+          <div class="sp-row">
+            <label data-i18n="split_col">Chia cột:</label>
+            <span data-i18n="per_col_prefix">Mỗi cột</span> <input type="number" id="spPerCol" value="10" min="1" max="25" onchange="pushSettings()">
+          </div>
+
+          <div class="sp-title-sec" data-i18n="display_sec">Hiển thị</div>
+          <div class="sp-row">
+            <label><input type="checkbox" id="spShowName" checked onchange="pushSettings()"> <span data-i18n="disp_name">Tên</span></label>
+            <label><input type="checkbox" id="spShowScore" checked onchange="pushSettings()"> <span data-i18n="disp_score">Điểm</span></label>
+            <label><input type="checkbox" id="spShowRound" checked onchange="pushSettings()"> <span data-i18n="disp_round">Vòng</span></label>
+          </div>
+          <div class="sp-row">
+            <label data-i18n="av_lbl">Avatar:</label>
+            <div class="radio-grp">
+              <label><input type="radio" name="spAv" value="small" onchange="pushSettings()"> <span data-i18n="av_sm">Nhỏ</span></label>
+              <label><input type="radio" name="spAv" value="large" checked onchange="pushSettings()"> <span data-i18n="av_lg">Lớn</span></label>
+              <label><input type="radio" name="spAv" value="none" onchange="pushSettings()"> <span data-i18n="av_off">Tắt</span></label>
+            </div>
+          </div>
+
+          <div class="sp-title-sec" data-i18n="range_sec">Phạm vi TOP</div>
+          <div class="sp-row">
+            <input type="number" id="spFrom" value="1" min="1" max="100" style="width:40px;" onchange="pushSettings()">
+            — <input type="number" id="spTo" value="96" min="1" max="100" style="width:40px;" onchange="pushSettings()">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OBS links -->
+    <div class="section">
+      <h2 data-i18n="obs_title">OBS Browser Source</h2>
+      <div class="ov-links">
+        <div>
+          <div class="ov-label">
+            <span data-i18n="obs_rank">📊 Bảng XH lưới</span>
+          </div>
+          <div class="ov-link" id="lnk-rank" onclick="copyLink('lnk-rank')">--</div>
+        </div>
+        <div>
+          <div class="ov-label">
+            <span data-i18n="obs_popup">⏱ Widget idol + timer</span>
+            <span class="dim-badge" data-i18n="popup_dim">W: 660 | H: 180</span>
+          </div>
+          <div class="ov-link" id="lnk-popup" onclick="copyLink('lnk-popup')">--</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ---- I18N DICTIONARY ----
+const i18n = {
+  vi: {
+    idol_title: "Idol",
+    select_btn: "☑ Chọn",
+    exit_select: "✕ Thoát",
+    select_all: "Tất",
+    deselect: "Bỏ",
+    del_selected: "🗑 Xóa chọn",
+    del_all: "🗑 Xóa tất",
+    add_idol_title: "Thêm Idol",
+    search_ph: "🔍 Tìm idol...",
+    tab_single: "Thêm 1",
+    tab_batch: "Hàng loạt",
+    tab_io: "Import/Export",
+    io_hint: "Định dạng: name|username|score|live/out|link avatar (mỗi dòng 1 idol)",
+    btn_import: "📥 Import",
+    btn_export: "📤 Export",
+    msg_import_ok: "✔ Đã import thành công!",
+    idol_name_ph: "Tên idol",
+    btn_add: "➕ Thêm",
+    avatar_ph: "Link ảnh avatar (tuỳ chọn)",
+    tiktok_id_ph: "TikTok ID / @username",
+    btn_check_avatar: "🔍 Kiểm tra avatar",
+    btn_fill_avatars: "🔄 Tìm avatar còn thiếu",
+    batch_hint: "Mỗi tên một dòng.",
+    batch_ph: "Idol A\nIdol B",
+    btn_add_batch: "➕ Thêm tất cả",
+    tiktok_title: "TikTok Live",
+    gift_title: "Nhận điểm Gift",
+    gift_on: "🟢 Nhận điểm",
+    gift_off: "⏸ Không nhận",
+    auto_mode: "🤖 Tự động",
+    manual_mode: "👆 Thủ công",
+    btn_start: "▶ Bắt đầu",
+    btn_stop: "⏹ Dừng",
+    timer_title: "Thời gian",
+    min_unit: "p",
+    sec_unit: "g",
+    btn_set: "Đặt",
+    btn_reset_all: "🔄 Reset tất cả",
+    widget_title: "Widget Xếp hạng",
+    basic_setting: "Cài đặt cơ bản",
+    rank_name_lbl: "Tên xếp hạng:",
+    btn_copy: "🔗 Copy",
+    sort_sec: "Sắp xếp",
+    order_lbl: "Thứ tự:",
+    ord_col: "Dọc",
+    ord_row: "Ngang",
+    split_col: "Chia cột:",
+    per_col_prefix: "Mỗi cột",
+    display_sec: "Hiển thị",
+    disp_name: "Tên",
+    disp_score: "Điểm",
+    disp_round: "Vòng",
+    av_lbl: "Avatar:",
+    av_sm: "Nhỏ",
+    av_lg: "Lớn",
+    av_off: "Tắt",
+    range_sec: "Phạm vi TOP",
+    obs_title: "OBS Browser Source",
+    obs_rank: "📊 Bảng XH lưới",
+    obs_popup: "⏱ Widget idol + timer",
+    popup_dim: "Rộng: 660 | Cao: 180",
+    conn_ok: "✔ Đã nối: ",
+    conn_connecting: "Đang nối...",
+    conn_none: "Chưa kết nối",
+    btn_select_idol: "Chọn",
+    btn_eliminate: "Loại",
+    btn_revive: "Hồi sinh",
+    btn_add_pts: "Cộng",
+    btn_reset_pts: "Reset",
+    btn_set_pts: "Đặt điểm",
+    pts_ph: "±Số điểm",
+    score_ph: "Tổng điểm...",
+    msg_copied: "✔ Đã copy!",
+    confirm_del_single: "Xoá ",
+    confirm_del_selected: "Xóa %d idol đã chọn?",
+    confirm_del_all: "Xóa TẤT CẢ %d idol?",
+    alert_no_select: "Chưa chọn idol!",
+    alert_empty: "Danh sách trống!",
+    target_title: "🎯 Mục tiêu điểm",
+    target_off_label: "Tắt",
+    target_on_label: "Bật",
+    target_score_lbl: "Mục tiêu 💎:",
+    target_apply: "✔ Áp dụng",
+    target_autostop: "Tự dừng khi đạt",
+    target_reset: "↺ Reset mục tiêu",
+    target_status_wait: "Đang chờ...",
+    target_status_reached: "🎉 Đã đạt mục tiêu!",
+  },
+  en: {
+    idol_title: "Idol List",
+    select_btn: "☑ Select",
+    exit_select: "✕ Exit",
+    select_all: "All",
+    deselect: "None",
+    del_selected: "🗑 Delete",
+    del_all: "🗑 Clear All",
+    add_idol_title: "Add Idol",
+    search_ph: "🔍 Search idol...",
+    tab_single: "Single",
+    tab_batch: "Batch",
+    tab_io: "Import/Export",
+    io_hint: "Format: name|username|score|live/out|avatar_link (one per line)",
+    btn_import: "📥 Import",
+    btn_export: "📤 Export",
+    msg_import_ok: "✔ Imported successfully!",
+    idol_name_ph: "Idol name",
+    btn_add: "➕ Add",
+    avatar_ph: "Avatar link (optional)",
+    tiktok_id_ph: "TikTok ID / @username",
+    btn_check_avatar: "🔍 Check avatar",
+    btn_fill_avatars: "🔄 Fill missing avatars",
+    batch_hint: "One name per line.",
+    batch_ph: "Idol A\nIdol B",
+    btn_add_batch: "➕ Add All",
+    tiktok_title: "TikTok Live",
+    gift_title: "Gift Points",
+    gift_on: "🟢 Receiving",
+    gift_off: "⏸ Paused",
+    auto_mode: "🤖 Auto",
+    manual_mode: "👆 Manual",
+    btn_start: "▶ Start",
+    btn_stop: "⏹ Stop",
+    timer_title: "Timer",
+    min_unit: "m",
+    sec_unit: "s",
+    btn_set: "Set",
+    btn_reset_all: "🔄 Reset All",
+    widget_title: "Leaderboard Widget",
+    basic_setting: "Basic Settings",
+    rank_name_lbl: "Title:",
+    btn_copy: "🔗 Copy",
+    sort_sec: "Sorting Rules",
+    order_lbl: "Direction:",
+    ord_col: "Column",
+    ord_row: "Row",
+    split_col: "Split Cols:",
+    per_col_prefix: "Max/col",
+    display_sec: "Display Elements",
+    disp_name: "Name",
+    disp_score: "Score",
+    disp_round: "Round",
+    av_lbl: "Avatar:",
+    av_sm: "Small",
+    av_lg: "Large",
+    av_off: "Off",
+    range_sec: "TOP Range",
+    obs_title: "OBS Browser Source",
+    obs_rank: "📊 Grid Leaderboard",
+    obs_popup: "⏱ Idol & Timer Widget",
+    popup_dim: "Width: 660 | Height: 180",
+    conn_ok: "✔ Connected: ",
+    conn_connecting: "Connecting...",
+    conn_none: "Disconnected",
+    btn_select_idol: "Select",
+    btn_eliminate: "Out",
+    btn_revive: "Revive",
+    btn_add_pts: "Add",
+    btn_reset_pts: "Reset",
+    btn_set_pts: "Set Score",
+    pts_ph: "±Pts",
+    score_ph: "Score...",
+    msg_copied: "✔ Copied!",
+    confirm_del_single: "Delete ",
+    confirm_del_selected: "Delete %d selected idols?",
+    confirm_del_all: "Delete ALL %d idols?",
+    alert_no_select: "No idols selected!",
+    alert_empty: "List is empty!",
+    target_title: "🎯 Score Target",
+    target_off_label: "Off",
+    target_on_label: "On",
+    target_score_lbl: "Target 💎:",
+    target_apply: "✔ Apply",
+    target_autostop: "Auto-stop on reach",
+    target_reset: "↺ Reset target",
+    target_status_wait: "Waiting...",
+    target_status_reached: "🎉 Target reached!",
+  }
+};
+
+let currentLang = localStorage.getItem("app_lang") || "vi";
+
+function setLang(lang) {
+  currentLang = lang;
+  localStorage.setItem("app_lang", lang);
+  document.getElementById("lang-vi").classList.toggle("active", lang === "vi");
+  document.getElementById("lang-en").classList.toggle("active", lang === "en");
+  
+  document.querySelectorAll("[data-i18n]").forEach(el => {
+    const key = el.getAttribute("data-i18n");
+    if (i18n[lang][key]) el.textContent = i18n[lang][key];
+  });
+  
+  document.querySelectorAll("[data-i18n-ph]").forEach(el => {
+    const key = el.getAttribute("data-i18n-ph");
+    if (i18n[lang][key]) el.placeholder = i18n[lang][key];
+  });
+
+  render();
+}
+
+let state = null;
+let searchQ = "";
+
+function post(url, body) {
+  return fetch(url, { method:"POST", headers:{"Content-Type":"application/json"}, body: body!=null?JSON.stringify(body):undefined });
+}
+function fmtTime(sec) {
+  sec = Math.max(0, sec|0);
+  return String(Math.floor(sec/60)).padStart(2,"0")+":"+String(sec%60).padStart(2,"0");
+}
+function copyLink(id) {
+  const t = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(t).then(()=>{
+    const el=document.getElementById(id); const old=el.textContent;
+    el.textContent=i18n[currentLang].msg_copied; setTimeout(()=>el.textContent=old,1500);
+  });
+}
+function copyRankName() {
+  const t = document.getElementById("spTitle").value;
+  navigator.clipboard.writeText(t).then(() => alert(i18n[currentLang].msg_copied + " " + t));
+}
+
+function filterIdols(q) {
+  searchQ = q.trim().toLowerCase();
+  document.getElementById("searchClear").style.display = searchQ ? "block" : "none";
+  applyFilter();
+}
+function clearSearch() {
+  document.getElementById("searchInput").value = "";
+  filterIdols("");
+}
+function applyFilter() {
+  document.querySelectorAll(".idol-card").forEach(card => {
+    const name = (card.dataset.name || "").toLowerCase();
+    card.classList.toggle("hidden", searchQ !== "" && !name.includes(searchQ));
+  });
+}
+
+function connectRoom()    { const id=document.getElementById("roomInput").value.trim(); if(id) post("/api/room",{unique_id:id}); }
+function disconnectRoom() { post("/api/room/disconnect"); }
+
+function setMode(m)   { post("/api/gifts/mode",{mode:m}); }
+function giftsStart() { post("/api/gifts/start"); }
+function giftsStop()  { post("/api/gifts/stop"); }
+
+function setDuration() {
+  const m=parseInt(document.getElementById("durMin").value||"0",10);
+  const s=parseInt(document.getElementById("durSec").value||"0",10);
+  post("/api/timer/duration",{seconds:m*60+s});
+}
+
+function switchTab(name) {
+  document.querySelectorAll(".tab-btn").forEach((b,i)=>b.classList.toggle("on",["single","batch","io"][i]===name));
+  document.querySelectorAll(".tab-panel").forEach(p=>p.classList.remove("on"));
+  document.getElementById("tab-"+name).classList.add("on");
+}
+function addIdol() {
+  const name=document.getElementById("idolName").value.trim();
+  const tiktok_id=document.getElementById("idolTikTok").value.trim().replace(/^@/,"");
+  const avatar=document.getElementById("idolAvatar").value.trim();
+  if(!name) return;
+  // Không tự lấy avatar ở đây — bấm "🔍 Kiểm tra avatar" trước nếu muốn có avatar.
+  post("/api/idol",{name,avatar,tiktok_id}).then(()=>{
+    document.getElementById("idolName").value="";
+    document.getElementById("idolTikTok").value="";
+    document.getElementById("idolAvatar").value="";
+    document.getElementById("idolAvatarStatus").textContent="";
+    const preview=document.getElementById("idolAvatarPreview");
+    if(preview){preview.classList.remove("show");preview.removeAttribute("src");}
+  });
+}
+
+function showAvatarPreview(avatarInput,previewId){
+  const avatar=document.getElementById(avatarInput);
+  const preview=document.getElementById(previewId);
+  if(!avatar||!preview)return;
+  const url=avatar.value.trim();
+  if(url){preview.src=url;preview.classList.add("show");}
+  else{preview.classList.remove("show");preview.removeAttribute("src");}
+}
+
+function clearAvatarPreviewIfEmpty(){
+  const tiktokId=document.getElementById("idolTikTok").value.trim();
+  const avatarVal=document.getElementById("idolAvatar").value.trim();
+  if(!tiktokId && !avatarVal){
+    const preview=document.getElementById("idolAvatarPreview");
+    if(preview){preview.classList.remove("show");preview.removeAttribute("src");}
+    document.getElementById("idolAvatarStatus").textContent="";
+  }
+}
+
+async function checkAvatar(){
+  const idEl=document.getElementById("idolTikTok");
+  const avatarEl=document.getElementById("idolAvatar");
+  const statusEl=document.getElementById("idolAvatarStatus");
+  const preview=document.getElementById("idolAvatarPreview");
+  const username=idEl.value.trim().replace(/^@/,"");
+  if(!username){statusEl.textContent="";return;}
+  statusEl.textContent="⏳ Đang lấy avatar...";
+  try{
+    const r=await fetch("/api/tiktok/avatar?username="+encodeURIComponent(username));
+    const data=await r.json();
+    if(data.ok){
+      avatarEl.value=data.avatar;
+      statusEl.textContent="✅ Avatar TikTok";
+      if(preview){preview.src=data.avatar;preview.classList.add("show");}
+    }else{
+      statusEl.textContent="⚠ "+(data.error||"Không lấy được avatar");
+      if(preview){preview.classList.remove("show");preview.removeAttribute("src");}
+    }
+  }catch(e){
+    statusEl.textContent="⚠ Không kết nối được";
+  }
+}
+
+async function fillMissingAvatars(){
+  const statusEl=document.getElementById("fillAvatarsStatus");
+  statusEl.textContent="⏳ Đang quét & gán avatar...";
+  try{
+    const r=await post("/api/idol/fill_avatars");
+    const data=await r.json();
+    if(data.ok){
+      if(data.checked===0){
+        statusEl.textContent="Không có idol nào cần tìm avatar (đã có avatar hoặc chưa nhập TikTok ID).";
+      }else{
+        statusEl.textContent=`✅ Đã gán ${data.filled}/${data.checked} avatar` + (data.failed?`, ${data.failed} không tìm được`:"");
+      }
+    }else{
+      statusEl.textContent="⚠ Có lỗi khi quét avatar";
+    }
+  }catch(e){
+    statusEl.textContent="⚠ Không kết nối được server";
+  }
+}
+function addBatch() {
+  const names=document.getElementById("batchNames").value.split("\n").map(s=>s.trim()).filter(Boolean);
+  if(!names.length) return;
+  post("/api/idol/batch",{names}).then(r=>r.json()).then(d=>{
+    document.getElementById("batchStatus").textContent="✔ "+d.added;
+    document.getElementById("batchNames").value="";
+    setTimeout(()=>document.getElementById("batchStatus").textContent="",3000);
+  });
+}
+
+async function importIdols() {
+  const text = document.getElementById("ioData").value.trim();
+  if (!text) return;
+
+  const lines = text.split("\n");
+  let count = 0;
+
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    const parts = line.split("|").map(s => s.trim());
+    const name = parts[0];
+    const tiktok_id = (parts[1] || "").replace(/^@/, "");
+    const score = parseInt(parts[2], 10) || 0;
+    const statusRaw = (parts[3] || "").toLowerCase();
+    const isOut = statusRaw === "out";
+    const avatar = parts[4] || "";
+
+    if (name) {
+      // 1. Tạo idol mới
+      const res = await post("/api/idol", { name, avatar, tiktok_id });
+      const data = await res.json();
+      const targetId = data && data.id ? data.id : (state && state.idols ? state.idols.find(i => i.name === name)?.id : null);
+      
+      if (targetId) {
+        // 2. Cập nhật điểm
+        if (score > 0) {
+          await post("/api/idol/" + targetId + "/set_score", { score });
+        }
+        // 3. Cập nhật trạng thái 'out' nếu có
+        if (isOut) {
+          await post("/api/idol/" + targetId + "/eliminate");
+        }
+      }
+      count++;
+    }
+  }
+
+  const statusEl = document.getElementById("ioStatus");
+  statusEl.textContent = (i18n[currentLang].msg_import_ok || "✔ OK") + " (" + count + ")";
+  setTimeout(() => statusEl.textContent = "", 3000);
+}
+
+function exportIdols() {
+  if (!state || !state.idols || !state.idols.length) return;
+  
+  // Xuất theo chuẩn: name|username|score|live/out|avatar
+  const lines = state.idols.map(i => {
+    const status = i.eliminated ? "out" : "live";
+    return `${i.name}|${i.tiktok_id || ""}|${i.score}|${status}|${i.avatar || ""}`;
+  });
+  document.getElementById("ioData").value = lines.join("\n");
+}
+
+function removeIdol(id,name){ if(confirm(i18n[currentLang].confirm_del_single + name + "?")) fetch("/api/idol/"+id,{method:"DELETE"}); }
+
+window._selectMode = false;
+function toggleSelectMode() {
+  window._selectMode = !window._selectMode;
+  const btn = document.getElementById("btnSelectMode");
+  const actions = document.getElementById("selectActions");
+  if (window._selectMode) {
+    btn.textContent = i18n[currentLang].exit_select;
+    btn.style.background = "#5c1e1e";
+    btn.style.borderColor = "#e06666";
+    btn.style.color = "#ef9f9f";
+    actions.style.display = "flex";
+  } else {
+    btn.textContent = i18n[currentLang].select_btn;
+    btn.style.background = "#444";
+    btn.style.borderColor = "#666";
+    btn.style.color = "#eee";
+    actions.style.display = "none";
+  }
+  render();
+}
+
+function selectAll() { document.querySelectorAll(".idol-select-chk").forEach(c => c.checked = true); }
+function deselectAll() { document.querySelectorAll(".idol-select-chk").forEach(c => c.checked = false); }
+
+function deleteSelected() {
+  const ids = [...document.querySelectorAll(".idol-select-chk:checked")].map(c => c.dataset.id);
+  if (!ids.length) { alert(i18n[currentLang].alert_no_select); return; }
+  if (!confirm(i18n[currentLang].confirm_del_selected.replace("%d", ids.length))) return;
+  post("/api/idol/bulk_delete", {ids}).then(() => {
+    window._selectMode = false;
+    toggleSelectMode();
+  });
+}
+
+function deleteAllIdols() {
+  const total = (lastState && lastState.idols) ? lastState.idols.length : 0;
+  if (!total) { alert(i18n[currentLang].alert_empty); return; }
+  if (!confirm(i18n[currentLang].confirm_del_all.replace("%d", total))) return;
+  fetch("/api/idol/all", {method:"DELETE"});
+}
+function setActive(id)      { post("/api/idol/"+id+"/active"); }
+function resetIdol(id)      { post("/api/idol/"+id+"/reset"); }
+function eliminateIdol(id)  { post("/api/idol/"+id+"/eliminate"); }
+function reviveIdol(id)     { post("/api/idol/"+id+"/revive"); }
+function addCustomPoints(id,inputId){
+  const val=parseInt(document.getElementById(inputId).value,10);
+  if(!val||isNaN(val)) return;
+  post("/api/idol/"+id+"/points",{delta:val});
+  document.getElementById(inputId).value="";
+}
+function setScore(id,inputId){
+  const val=parseInt(document.getElementById(inputId).value,10);
+  if(isNaN(val)||val<0) return;
+  post("/api/idol/"+id+"/set_score",{score:val});
+  document.getElementById(inputId).value="";
+}
+
+// ---- TARGET MODE ----
+function onTargetToggle() {
+  const enabled = document.getElementById("targetEnabled").checked;
+  document.getElementById("targetConfig").style.display = enabled ? "block" : "none";
+  if (!enabled) {
+    post("/api/target", { enabled: false, score: parseInt(document.getElementById("targetScore").value||"1000",10) });
+  }
+}
+
+function applyTarget() {
+  const score = parseInt(document.getElementById("targetScore").value||"1000",10);
+  if (!score || score < 1) return;
+  post("/api/target", { enabled: true, score });
+}
+
+function resetTarget() {
+  post("/api/target/reset");
+}
+
+function renderTarget() {
+  if (!state || !state.target) return;
+  const tgt = state.target;
+  const L = i18n[currentLang];
+
+  document.getElementById("targetEnabled").checked = tgt.enabled;
+  document.getElementById("targetConfig").style.display = tgt.enabled ? "block" : "none";
+
+  const box = document.getElementById("targetBox");
+  if (!tgt.enabled) { box.className = "off"; }
+  else if (tgt.reached) { box.className = "reached"; }
+  else { box.className = "on"; }
+
+  document.getElementById("targetModeLabel").textContent = tgt.enabled ? L.target_on_label : L.target_off_label;
+
+  if (tgt.enabled) {
+    const active = state.idols.find(i => i.active);
+    const sessionScore = active ? (active.score - (active.session_base || 0)) : 0;
+    const pct = tgt.score > 0 ? Math.min(100, sessionScore / tgt.score * 100) : 0;
+    document.getElementById("targetBarFill").style.width = pct + "%";
+    document.getElementById("targetBarLabel").textContent = sessionScore.toLocaleString() + " / " + tgt.score.toLocaleString() + " 💎";
+
+    const st = document.getElementById("targetStatus");
+    if (tgt.reached) {
+      st.textContent = L.target_status_reached;
+      st.className = "ok";
+    } else {
+      st.textContent = L.target_status_wait;
+      st.className = "wait";
+    }
+  } else {
+    document.getElementById("targetBarFill").style.width = "0%";
+    document.getElementById("targetBarLabel").textContent = "";
+    document.getElementById("targetStatus").textContent = "";
+  }
+}
+
+function pushSettings() {
+  const enabled   = document.getElementById("spEnabled").checked ? "1" : "0";
+  const title     = encodeURIComponent(document.getElementById("spTitle").value);
+  const order     = document.querySelector('input[name="spOrder"]:checked').value;
+  const perCol    = document.getElementById("spPerCol").value;
+  const showName  = document.getElementById("spShowName").checked ? "1" : "0";
+  const showScore = document.getElementById("spShowScore").checked ? "1" : "0";
+  const showRound = document.getElementById("spShowRound").checked ? "1" : "0";
+  const avSize    = document.querySelector('input[name="spAv"]:checked').value;
+  const topFrom   = document.getElementById("spFrom").value;
+  const topTo     = document.getElementById("spTo").value;
+  
+  const params    = `?enabled=${enabled}&title=${title}&order=${order}&perCol=${perCol}&name=${showName}&score=${showScore}&round=${showRound}&av=${avSize}&from=${topFrom}&to=${topTo}`;
+  const rankUrl   = location.origin + "/overlay/rank" + params;
+  document.getElementById("lnk-rank").textContent = rankUrl;
+}
+
+function initials(name){ return name.trim().slice(0,2).toUpperCase(); }
+const RANK_ICONS = ["👑","🥈","🥉"];
+
+let lastState = null;
+function render(){
+  if(!state) return;
+  lastState = state;
+
+  const L = i18n[currentLang];
+
+  const cs=document.getElementById("connStatus");
+  if(state.connected){ cs.textContent=L.conn_ok+state.room; cs.className="status ok"; }
+  else if(state.last_error){ cs.textContent="✘ "+state.last_error; cs.className="status bad"; }
+  else { cs.textContent=state.room?L.conn_connecting:L.conn_none; cs.className="status"; }
+
+  const on=state.accepting_gifts;
+  document.getElementById("giftBox").className=on?"on":"off";
+  const gs=document.getElementById("giftStatus");
+  gs.className=on?"on":"off";
+  gs.textContent=on?L.gift_on:L.gift_off;
+  const isAuto=state.gift_mode==="auto";
+  document.getElementById("btnAuto").classList.toggle("btn-yellow",isAuto);
+  document.getElementById("btnManual").classList.toggle("btn-yellow",!isAuto);
+  document.getElementById("manualBtns").style.display=isAuto?"none":"flex";
+  document.getElementById("btnGiftStart").disabled=on;
+  document.getElementById("btnGiftStop").disabled=!on;
+
+  const t=state.timer;
+  document.getElementById("timerBig").textContent=fmtTime(t.remaining)+(t.running?" ▶":t.finished?" 🏁":"");
+
+  const _active = [...state.idols].filter(i=>!i.eliminated).sort((a,b)=>b.score-a.score);
+  const _ousted = [...state.idols].filter(i=> i.eliminated).sort((a,b)=>(b.eliminated_at||0)-(a.eliminated_at||0));
+  const idols   = [..._active, ..._ousted];
+  const maxScore=Math.max(1,...idols.map(i=>i.score));
+
+  const list=document.getElementById("idolList");
+
+  const active = document.activeElement;
+  const isTypingInList = active && active.tagName === "INPUT" && list.contains(active);
+
+  if (isTypingInList) {
+    const maxScore = Math.max(1, ...idols.map(i => i.score));
+    idols.forEach(idol => {
+      const card = list.querySelector(`[data-id="${idol.id}"]`);
+      if (!card) return;
+      const scoreEl = card.querySelector(".idol-score");
+      if (scoreEl) scoreEl.textContent = idol.score.toLocaleString() + " 💎";
+      const barFill = card.querySelector(".idol-bar-fill");
+      if (barFill) barFill.style.width = (idol.score / maxScore * 100) + "%";
+    });
+    renderTarget();
+    return;
+  }
+
+  list.innerHTML="";
+  idols.forEach((idol,i)=>{
+    const inputId="pts_"+idol.id;
+    const setId="set_"+idol.id;
+    const card=document.createElement("div");
+    let cardCls="idol-card";
+    if(idol.active) cardCls+=" active";
+    if(idol.eliminated) cardCls+=" eliminated";
+    card.className=cardCls;
+    card.dataset.name=idol.name.toLowerCase();
+    card.dataset.id=idol.id;
+
+    const top=document.createElement("div"); top.className="idol-top";
+
+    const rankEl=document.createElement("div"); rankEl.className="idol-rank";
+    rankEl.textContent=i<3?RANK_ICONS[i]:i+1; top.appendChild(rankEl);
+
+    const av=document.createElement("div"); av.className="idol-av";
+    if(idol.avatar) av.style.backgroundImage=`url('${idol.avatar}')`;
+    else av.textContent=initials(idol.name);
+    top.appendChild(av);
+
+    const nameEl=document.createElement("div"); nameEl.className="idol-name";
+    nameEl.textContent=idol.name; top.appendChild(nameEl);
+
+    if(idol.eliminated){
+      const badge=document.createElement("span"); badge.className="out-badge";
+      badge.textContent="OUT"; top.appendChild(badge);
+    }
+
+    const scoreEl=document.createElement("div"); scoreEl.className="idol-score";
+    scoreEl.textContent=idol.score.toLocaleString()+" 💎"; top.appendChild(scoreEl);
+
+    if(!idol.eliminated){
+      const ab=document.createElement("button");
+      ab.textContent=idol.active?"★":L.btn_select_idol; ab.style.fontSize="11px";
+      if(idol.active) ab.classList.add("btn-yellow");
+      ab.onclick=()=>setActive(idol.id); top.appendChild(ab);
+    }
+
+    if(!idol.eliminated){
+      const eb=document.createElement("button"); eb.textContent=L.btn_eliminate;
+      eb.classList.add("btn-orange"); eb.style.fontSize="10px";
+      eb.onclick=()=>eliminateIdol(idol.id); top.appendChild(eb);
+    } else {
+      const rv=document.createElement("button"); rv.textContent=L.btn_revive;
+      rv.classList.add("btn-teal"); rv.style.fontSize="10px";
+      rv.onclick=()=>reviveIdol(idol.id); top.appendChild(rv);
+    }
+
+    const db=document.createElement("button"); db.textContent="✕"; db.classList.add("btn-red");
+    db.style.fontSize="11px";
+    db.onclick=()=>removeIdol(idol.id,idol.name); top.appendChild(db);
+
+    if (window._selectMode) {
+      const chk = document.createElement("input");
+      chk.type = "checkbox";
+      chk.className = "idol-select-chk";
+      chk.dataset.id = idol.id;
+      chk.style.cssText = "width:16px;height:16px;cursor:pointer;accent-color:#e05050;flex-shrink:0;";
+      top.insertBefore(chk, top.firstChild);
+    }
+
+    const barBg=document.createElement("div"); barBg.className="idol-bar-bg";
+    const barFill=document.createElement("div"); barFill.className="idol-bar-fill";
+    barFill.style.width=(idol.score/maxScore*100)+"%";
+    barBg.appendChild(barFill);
+
+    const bot=document.createElement("div"); bot.className="idol-bot";
+    const ci=document.createElement("input"); ci.type="number"; ci.id=inputId;
+    ci.placeholder=L.pts_ph; ci.style.fontSize="11px"; ci.style.flex="1"; ci.style.minWidth="0";
+    ci.onkeydown=e=>{ if(e.key==="Enter") addCustomPoints(idol.id,inputId); };
+    const cb=document.createElement("button"); cb.textContent=L.btn_add_pts; cb.style.fontSize="10px";
+    cb.onclick=()=>addCustomPoints(idol.id,inputId);
+    const rb=document.createElement("button"); rb.textContent=L.btn_reset_pts; rb.style.fontSize="10px";
+    rb.onclick=()=>resetIdol(idol.id);
+    bot.appendChild(ci); bot.appendChild(cb); bot.appendChild(rb);
+
+    const bot2=document.createElement("div"); bot2.className="idol-bot";
+    bot2.style.marginTop="4px";
+    const si=document.createElement("input"); si.type="number"; si.id=setId; si.min="0";
+    si.placeholder=L.score_ph; si.style.fontSize="11px"; si.style.flex="1"; si.style.minWidth="0";
+    si.onkeydown=e=>{ if(e.key==="Enter") setScore(idol.id,setId); };
+    const sb=document.createElement("button"); sb.textContent=L.btn_set_pts; sb.style.fontSize="10px";
+    sb.onclick=()=>setScore(idol.id,setId);
+    bot2.appendChild(si); bot2.appendChild(sb);
+
+    card.appendChild(top);
+    card.appendChild(barBg);
+    card.appendChild(bot);
+    card.appendChild(bot2);
+    list.appendChild(card);
+  });
+
+  applyFilter();
+  renderTarget();
+}
+
+function connect(){
+  const proto=location.protocol==="https:"?"wss":"ws";
+  const ws=new WebSocket(`${proto}://${location.host}/ws`);
+  ws.onmessage=ev=>{ const m=JSON.parse(ev.data); if(m.type==="state"){state=m.data;render();} };
+  ws.onclose=()=>setTimeout(connect,1500);
+}
+connect();
+
+const base=location.origin;
+document.getElementById("lnk-popup").textContent=base+"/overlay/popup";
+document.getElementById("searchClear").style.display="none";
+setLang(currentLang);
+pushSettings();
+</script>
+</body>
+</html>
