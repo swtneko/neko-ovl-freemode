@@ -25,6 +25,9 @@
   .row { display: flex; gap: 6px; margin-bottom: 7px; flex-wrap: wrap; align-items: center; }
   .hint { opacity: .45; font-size: 11px; margin: 3px 0 6px; }
   .status { font-size: 12px; }
+  .small { font-size: 11px; opacity: .8; }
+  .avatar-preview { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; background: #333; flex: none; display: none; border: 1px solid #555; }
+  .avatar-preview.show { display: block; }
   .ok  { color: #6fdc6f; } .bad { color: #e06666; }
 
   .lang-switcher { display: flex; gap: 4px; background: #1a1a20; padding: 2px; border-radius: 6px; border: 1px solid #3a3a44; }
@@ -169,6 +172,10 @@
         <input id="searchInput" placeholder="🔍 Tìm idol..." data-i18n-ph="search_ph" oninput="filterIdols(this.value)">
         <button id="searchClear" onclick="clearSearch()" title="Xoá tìm kiếm">✕</button>
       </div>
+      <div class="row" style="margin-bottom:9px;">
+        <button type="button" onclick="fillMissingAvatars()" data-i18n="btn_fill_avatars">🔄 Tìm avatar còn thiếu</button>
+        <span id="fillAvatarsStatus" class="small"></span>
+      </div>
 
       <div class="tabs">
         <div class="tab-btn on"  onclick="switchTab('single')" data-i18n="tab_single">Thêm 1</div>
@@ -179,9 +186,19 @@
         <div id="tab-single" class="tab-panel on">
           <div class="row">
             <input id="idolName" placeholder="Tên idol" data-i18n-ph="idol_name_ph" style="flex:1; min-width: 0;">
-            <button onclick="addIdol()" data-i18n="btn_add">➕ Thêm</button>
+            <input id="idolTikTok" placeholder="TikTok ID / @username" data-i18n-ph="tiktok_id_ph" style="flex:1; min-width: 0;"
+                   oninput="clearAvatarPreviewIfEmpty()">
           </div>
-          <input id="idolAvatar" placeholder="Link ảnh avatar (tuỳ chọn)" data-i18n-ph="avatar_ph" style="width:100%;">
+          <div class="row">
+            <img id="idolAvatarPreview" class="avatar-preview" alt="avatar">
+            <input id="idolAvatar" placeholder="Link ảnh avatar (tuỳ chọn)" data-i18n-ph="avatar_ph" style="flex:1; min-width:0;"
+                   oninput="showAvatarPreview('idolAvatar','idolAvatarPreview')">
+          </div>
+          <div class="row" style="margin-bottom:0;">
+            <button type="button" onclick="checkAvatar()" data-i18n="btn_check_avatar">🔍 Kiểm tra avatar</button>
+            <button onclick="addIdol()" data-i18n="btn_add">➕ Thêm</button>
+            <span id="idolAvatarStatus" class="small"></span>
+          </div>
         </div>
         <div id="tab-batch" class="tab-panel">
           <p class="hint" data-i18n="batch_hint">Mỗi tên một dòng.</p>
@@ -192,8 +209,8 @@
           </div>
         </div>
         <div id="tab-io" class="tab-panel">
-          <p class="hint" data-i18n="io_hint">Định dạng: name|score|live/out|link avatar (mỗi dòng 1 idol)</p>
-          <textarea id="ioData" rows="5" placeholder="Idol A|1000|live|https://link-avatar-a.jpg&#10;Idol B|500|out|&#10;Idol C|200|live"></textarea>
+          <p class="hint" data-i18n="io_hint">Định dạng: name|username|score|live/out|link avatar (mỗi dòng 1 idol)</p>
+          <textarea id="ioData" rows="5" placeholder="Idol A|idola_tiktok|1000|live|https://link-avatar-a.jpg&#10;Idol B|idolb_tiktok|500|out|&#10;Idol C||200|live"></textarea>
           <div class="row" style="margin-top:6px;margin-bottom:0;">
             <button onclick="importIdols()" class="btn-green" data-i18n="btn_import">📥 Import</button>
             <button onclick="exportIdols()" class="btn-teal" data-i18n="btn_export">📤 Export</button>
@@ -376,13 +393,16 @@ const i18n = {
     tab_single: "Thêm 1",
     tab_batch: "Hàng loạt",
     tab_io: "Import/Export",
-    io_hint: "Định dạng: name|score|live/out|link avatar (mỗi dòng 1 idol)",
+    io_hint: "Định dạng: name|username|score|live/out|link avatar (mỗi dòng 1 idol)",
     btn_import: "📥 Import",
     btn_export: "📤 Export",
     msg_import_ok: "✔ Đã import thành công!",
     idol_name_ph: "Tên idol",
     btn_add: "➕ Thêm",
     avatar_ph: "Link ảnh avatar (tuỳ chọn)",
+    tiktok_id_ph: "TikTok ID / @username",
+    btn_check_avatar: "🔍 Kiểm tra avatar",
+    btn_fill_avatars: "🔄 Tìm avatar còn thiếu",
     batch_hint: "Mỗi tên một dòng.",
     batch_ph: "Idol A\nIdol B",
     btn_add_batch: "➕ Thêm tất cả",
@@ -462,13 +482,16 @@ const i18n = {
     tab_single: "Single",
     tab_batch: "Batch",
     tab_io: "Import/Export",
-    io_hint: "Format: name|score|live/out|avatar_link (one per line)",
+    io_hint: "Format: name|username|score|live/out|avatar_link (one per line)",
     btn_import: "📥 Import",
     btn_export: "📤 Export",
     msg_import_ok: "✔ Imported successfully!",
     idol_name_ph: "Idol name",
     btn_add: "➕ Add",
     avatar_ph: "Avatar link (optional)",
+    tiktok_id_ph: "TikTok ID / @username",
+    btn_check_avatar: "🔍 Check avatar",
+    btn_fill_avatars: "🔄 Fill missing avatars",
     batch_hint: "One name per line.",
     batch_ph: "Idol A\nIdol B",
     btn_add_batch: "➕ Add All",
@@ -616,9 +639,81 @@ function switchTab(name) {
 }
 function addIdol() {
   const name=document.getElementById("idolName").value.trim();
+  const tiktok_id=document.getElementById("idolTikTok").value.trim().replace(/^@/,"");
   const avatar=document.getElementById("idolAvatar").value.trim();
   if(!name) return;
-  post("/api/idol",{name,avatar}).then(()=>{ document.getElementById("idolName").value=""; document.getElementById("idolAvatar").value=""; });
+  // Không tự lấy avatar ở đây — bấm "🔍 Kiểm tra avatar" trước nếu muốn có avatar.
+  post("/api/idol",{name,avatar,tiktok_id}).then(()=>{
+    document.getElementById("idolName").value="";
+    document.getElementById("idolTikTok").value="";
+    document.getElementById("idolAvatar").value="";
+    document.getElementById("idolAvatarStatus").textContent="";
+    const preview=document.getElementById("idolAvatarPreview");
+    if(preview){preview.classList.remove("show");preview.removeAttribute("src");}
+  });
+}
+
+function showAvatarPreview(avatarInput,previewId){
+  const avatar=document.getElementById(avatarInput);
+  const preview=document.getElementById(previewId);
+  if(!avatar||!preview)return;
+  const url=avatar.value.trim();
+  if(url){preview.src=url;preview.classList.add("show");}
+  else{preview.classList.remove("show");preview.removeAttribute("src");}
+}
+
+function clearAvatarPreviewIfEmpty(){
+  const tiktokId=document.getElementById("idolTikTok").value.trim();
+  const avatarVal=document.getElementById("idolAvatar").value.trim();
+  if(!tiktokId && !avatarVal){
+    const preview=document.getElementById("idolAvatarPreview");
+    if(preview){preview.classList.remove("show");preview.removeAttribute("src");}
+    document.getElementById("idolAvatarStatus").textContent="";
+  }
+}
+
+async function checkAvatar(){
+  const idEl=document.getElementById("idolTikTok");
+  const avatarEl=document.getElementById("idolAvatar");
+  const statusEl=document.getElementById("idolAvatarStatus");
+  const preview=document.getElementById("idolAvatarPreview");
+  const username=idEl.value.trim().replace(/^@/,"");
+  if(!username){statusEl.textContent="";return;}
+  statusEl.textContent="⏳ Đang lấy avatar...";
+  try{
+    const r=await fetch("/api/tiktok/avatar?username="+encodeURIComponent(username));
+    const data=await r.json();
+    if(data.ok){
+      avatarEl.value=data.avatar;
+      statusEl.textContent="✅ Avatar TikTok";
+      if(preview){preview.src=data.avatar;preview.classList.add("show");}
+    }else{
+      statusEl.textContent="⚠ "+(data.error||"Không lấy được avatar");
+      if(preview){preview.classList.remove("show");preview.removeAttribute("src");}
+    }
+  }catch(e){
+    statusEl.textContent="⚠ Không kết nối được";
+  }
+}
+
+async function fillMissingAvatars(){
+  const statusEl=document.getElementById("fillAvatarsStatus");
+  statusEl.textContent="⏳ Đang quét & gán avatar...";
+  try{
+    const r=await post("/api/idol/fill_avatars");
+    const data=await r.json();
+    if(data.ok){
+      if(data.checked===0){
+        statusEl.textContent="Không có idol nào cần tìm avatar (đã có avatar hoặc chưa nhập TikTok ID).";
+      }else{
+        statusEl.textContent=`✅ Đã gán ${data.filled}/${data.checked} avatar` + (data.failed?`, ${data.failed} không tìm được`:"");
+      }
+    }else{
+      statusEl.textContent="⚠ Có lỗi khi quét avatar";
+    }
+  }catch(e){
+    statusEl.textContent="⚠ Không kết nối được server";
+  }
 }
 function addBatch() {
   const names=document.getElementById("batchNames").value.split("\n").map(s=>s.trim()).filter(Boolean);
@@ -641,26 +736,15 @@ async function importIdols() {
     if (!line.trim()) continue;
     const parts = line.split("|").map(s => s.trim());
     const name = parts[0];
-    const score = parseInt(parts[1], 10) || 0;
-    
-    // Đọc trạng thái live/out (mặc định là 'live')
-    let isOut = false;
-    let avatar = "";
-
-    if (parts[2]) {
-      const p2 = parts[2].toLowerCase();
-      if (p2 === "out" || p2 === "live") {
-        isOut = (p2 === "out");
-        avatar = parts[3] || "";
-      } else {
-        // Fallback trường hợp định dạng cũ: name|score|avatar
-        avatar = parts[2];
-      }
-    }
+    const tiktok_id = (parts[1] || "").replace(/^@/, "");
+    const score = parseInt(parts[2], 10) || 0;
+    const statusRaw = (parts[3] || "").toLowerCase();
+    const isOut = statusRaw === "out";
+    const avatar = parts[4] || "";
 
     if (name) {
       // 1. Tạo idol mới
-      const res = await post("/api/idol", { name, avatar });
+      const res = await post("/api/idol", { name, avatar, tiktok_id });
       const data = await res.json();
       const targetId = data && data.id ? data.id : (state && state.idols ? state.idols.find(i => i.name === name)?.id : null);
       
@@ -686,10 +770,10 @@ async function importIdols() {
 function exportIdols() {
   if (!state || !state.idols || !state.idols.length) return;
   
-  // Xuất theo chuẩn: name|score|live/out|avatar
+  // Xuất theo chuẩn: name|username|score|live/out|avatar
   const lines = state.idols.map(i => {
     const status = i.eliminated ? "out" : "live";
-    return `${i.name}|${i.score}|${status}|${i.avatar || ""}`;
+    return `${i.name}|${i.tiktok_id || ""}|${i.score}|${status}|${i.avatar || ""}`;
   });
   document.getElementById("ioData").value = lines.join("\n");
 }
