@@ -118,6 +118,11 @@
   <div class="widget" style="transform: scale(2.5);">
     <div class="widget-freemode">
       
+      <!-- Avatar Idol -->
+      <div class="widget-freemode-icon" id="w-avatar-wrap" style="display:none;">
+        <div class="avatar" id="w-avatar" style="--avatar-size:28px;"></div>
+      </div>
+
       <!-- Thẻ tên Idol -->
       <div class="widget-freemode-nick">
         <div class="marquee" id="w-name-marquee"></div>
@@ -211,6 +216,22 @@ function render() {
 
   const idol = state.idols ? state.idols.find(i => i.active) : null;
   const t = state.timer || { finished: false, remaining: 0, duration: 0 };
+
+  // Render avatar
+  const avatarWrap = document.getElementById("w-avatar-wrap");
+  const avatarEl = document.getElementById("w-avatar");
+  if (avatarWrap && avatarEl) {
+    const avatarUrl = idol ? (idol.avatar || "").trim() : "";
+    if (avatarUrl) {
+      avatarEl.innerHTML = `<img src="${avatarUrl}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+      avatarWrap.style.display = "";
+    } else {
+      // Không có avatar: hiện chữ tắt
+      const initials = idol ? idol.name.trim().slice(0, 2).toUpperCase() : "?";
+      avatarEl.innerHTML = `<span><em>${initials}</em></span>`;
+      avatarWrap.style.display = "";
+    }
+  }
 
   const nameMarqueeEl = document.getElementById("w-name-marquee");
   const currentName = idol ? idol.name.toUpperCase() : "---";
