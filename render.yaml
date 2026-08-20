@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: mca-overlay
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server.py
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        generateValue: true
