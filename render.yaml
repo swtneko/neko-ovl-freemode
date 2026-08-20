@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: mca-overlay
+    name: neko-freemode
     runtime: python
     buildCommand: pip install -r requirements.txt
     startCommand: python server.py
