@@ -224,7 +224,8 @@ function render() {
   const barWrap = document.getElementById("w-bar-wrap");
 
   const tgt = state.target || { enabled: false };
-  const standingBy = !t.running && !t.finished && t.duration > 0 && t.remaining === t.duration;
+  const standingBy = !t.running && !t.finished && !t.finishing && t.duration > 0 && t.remaining === t.duration;
+  const isFinishing = !!t.finishing; // grace period "Thống kê"
 
   if (tgt.enabled) {
     const over = Math.max(0, sessionScore - tgt.score);
@@ -241,10 +242,14 @@ function render() {
       if (t.finished) {
         timeBoxEl.className = "widget-freemode-time success";
         timeBoxEl.textContent = "Thành công";
+      } else if (isFinishing) {
+        timeBoxEl.className = "widget-freemode-time settling";
+        timeBoxEl.textContent = "Thống kê";
       } else if (standingBy) {
         timeBoxEl.className = "widget-freemode-time settling";
         timeBoxEl.textContent = "Chuẩn bị";
       } else {
+        // Timer vẫn đang chạy — giữ đếm ngược bình thường
         timeBoxEl.className = "widget-freemode-time";
         timeBoxEl.innerHTML = `<span id="w-timer">${fmtTime(t.remaining)}</span>`;
       }
@@ -259,6 +264,9 @@ function render() {
       if (t.finished) {
         timeBoxEl.className = "widget-freemode-time fail";
         timeBoxEl.textContent = "Thất bại";
+      } else if (isFinishing) {
+        timeBoxEl.className = "widget-freemode-time settling";
+        timeBoxEl.textContent = "Thống kê";
       } else if (standingBy) {
         timeBoxEl.className = "widget-freemode-time settling";
         timeBoxEl.textContent = "Chuẩn bị";
@@ -280,6 +288,10 @@ function render() {
       timeBoxEl.className = "widget-freemode-time success";
       timeBoxEl.textContent = "Thành công";
       if (barEl) barEl.style.width = "100%";
+    } else if (isFinishing) {
+      // Grace period: giữ thanh bar như cũ, hiện "Thống kê"
+      timeBoxEl.className = "widget-freemode-time settling";
+      timeBoxEl.textContent = "Thống kê";
     } else if (standingBy) {
       timeBoxEl.className = "widget-freemode-time settling";
       timeBoxEl.textContent = "Chuẩn bị";
@@ -306,15 +318,7 @@ function connect() {
         state = msg.data;
         render();
       } else if (msg.type === "target_reached") {
-        const timeBoxEl = document.getElementById("w-time-box");
-        if (timeBoxEl) {
-          timeBoxEl.className = "widget-freemode-time success";
-          timeBoxEl.textContent = "Thành công 🎉";
-        }
-        const barWrap = document.getElementById("w-bar-wrap");
-        if (barWrap) barWrap.classList.add("over");
-        const barEl = document.getElementById("w-bar");
-        if (barEl) barEl.style.width = "100%";
+        // Không can thiệp DOM trực tiếp — render() sẽ xử lý đúng dựa trên state
       }
     } catch (e) {
       console.error("Lỗi parse WebSocket data:", e);

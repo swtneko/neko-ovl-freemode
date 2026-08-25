@@ -83,7 +83,13 @@
   #giftStatus.off { color: #666; }
 
   #timerBig { font-size: 24px; font-weight: bold; text-align: center; margin: 4px 0 6px; letter-spacing: 1px; }
-  .timer-btns { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; margin-bottom: 6px; }
+  .timer-btns { display: flex; gap: 6px; flex-wrap: nowrap; justify-content: center; margin-bottom: 6px; }
+  .timer-btns button { font-size: 18px; padding: 10px 14px; min-width: 52px; line-height: 1; }
+
+  @media (max-width: 750px) {
+    .timer-btns { flex-direction: column !important; gap: 8px !important; }
+    .timer-btns button { font-size: 22px !important; padding: 14px !important; width: 100% !important; }
+  }
 
   .btn-green  { background: #1e5c1e !important; border-color: #4caf50 !important; color: #8fef8f !important; }
   .btn-green:hover  { background: #276b27 !important; }
@@ -254,6 +260,13 @@
         <input id="durMin" type="number" min="0" value="5" style="width:40px;"> <span data-i18n="min_unit">p</span>
         <input id="durSec" type="number" min="0" max="59" value="0" style="width:40px;"> <span data-i18n="sec_unit">g</span>
         <button onclick="setDuration()" data-i18n="btn_set">Đặt</button>
+      </div>
+      <div class="row" style="margin-bottom:4px;align-items:center;gap:6px;">
+        <span data-i18n="grace_lbl" style="font-size:11px;color:#aaa;">⏳ Thống kê:</span>
+        <input id="graceSec" type="number" min="0" max="30" value="3" style="width:44px;">
+        <span data-i18n="sec_unit" style="font-size:11px;color:#aaa;">g</span>
+        <button onclick="setGrace()" style="font-size:11px;" data-i18n="btn_set_grace">Đặt</button>
+        <span id="graceStatus" style="font-size:11px;color:#6fdc6f;"></span>
       </div>
       <div id="timerBig">--:--</div>
       <div class="timer-btns">
@@ -468,6 +481,8 @@ const i18n = {
     target_reset: "↺ Reset mục tiêu",
     target_status_wait: "Đang chờ...",
     target_status_reached: "🎉 Đã đạt mục tiêu!",
+    grace_lbl: "⏳ Thống kê:",
+    btn_set_grace: "Đặt",
   },
   en: {
     idol_title: "Idol List",
@@ -557,6 +572,8 @@ const i18n = {
     target_reset: "↺ Reset target",
     target_status_wait: "Waiting...",
     target_status_reached: "🎉 Target reached!",
+    grace_lbl: "⏳ Stats buffer:",
+    btn_set_grace: "Set",
   }
 };
 
@@ -630,6 +647,16 @@ function setDuration() {
   const m=parseInt(document.getElementById("durMin").value||"0",10);
   const s=parseInt(document.getElementById("durSec").value||"0",10);
   post("/api/timer/duration",{seconds:m*60+s});
+}
+
+function setGrace() {
+  const s = parseInt(document.getElementById("graceSec").value||"3",10);
+  if (isNaN(s) || s < 0) return;
+  post("/api/timer/grace", {seconds: Math.min(30, s)}).then(r => r.json()).then(d => {
+    const el = document.getElementById("graceStatus");
+    el.textContent = d.ok ? "✔" : "✘";
+    setTimeout(() => el.textContent = "", 1500);
+  });
 }
 
 function switchTab(name) {
@@ -938,7 +965,13 @@ function render(){
   document.getElementById("btnGiftStop").disabled=!on;
 
   const t=state.timer;
-  document.getElementById("timerBig").textContent=fmtTime(t.remaining)+(t.running?" ▶":t.finished?" 🏁":"");
+  // Đồng bộ giá trị "Thống kê" từ server (chỉ khi input không đang focus)
+  const graceInput = document.getElementById("graceSec");
+  if (graceInput && document.activeElement !== graceInput && t.grace_config != null) {
+    graceInput.value = t.grace_config;
+  }
+  const finLabel = t.finishing ? ` ⏳${t.grace_remaining}` : "";
+  document.getElementById("timerBig").textContent=fmtTime(t.remaining)+(t.running?" ▶":t.finished?" 🏁":t.finishing?finLabel:"");
 
   const _active = [...state.idols].filter(i=>!i.eliminated).sort((a,b)=>b.score-a.score);
   const _ousted = [...state.idols].filter(i=> i.eliminated).sort((a,b)=>(b.eliminated_at||0)-(a.eliminated_at||0));
