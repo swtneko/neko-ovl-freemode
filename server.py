@@ -33,6 +33,8 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # In-memory state
 # --------------------------------------------------------------------------
 
+GIFT_GRACE_SECONDS = 3   # Số giây đệm sau khi hết giờ để flush quà còn đang bay
+
 state = {
     "room": None,
     "connected": False,
@@ -43,6 +45,9 @@ state = {
         "remaining": 300,
         "running": False,
         "finished": False,
+        "finishing": False,   # True = đang trong grace period "Thống kê"
+        "grace_remaining": 0, # Đếm ngược grace period
+        "grace_config": 3,    # Số giây thống kê do user đặt (đọc bởi control)
     },
     # Chế độ nhận điểm
     # mode: "auto" = timer điều khiển bật/tắt nhận điểm
@@ -59,6 +64,9 @@ state = {
 }
 
 sockets: list[WebSocket] = []
+
+# Queue để tách việc nhận gift event khỏi broadcast — tránh block event loop
+_gift_queue: asyncio.Queue = None  # khởi tạo trong startup
 
 
 async def broadcast_state():
@@ -314,7 +322,8 @@ async def connect_room(unique_id: str):
     @client.on(GiftEvent)
     async def on_gift(event: GiftEvent):
         # Chỉ cộng điểm khi đang trong trạng thái accepting_gifts
-        if not state["accepting_gifts"]:
+        # (bao gồm cả grace period finishing)
+        if not state["accepting_gifts"] and not state["timer"].get("finishing"):
             return
         # Bỏ qua sự kiện giữa chừng của streak (chờ event cuối cùng)
         if event.streaking:
@@ -324,26 +333,10 @@ async def connect_room(unique_id: str):
         diamond_count = event.gift.diamond_count if event.gift else 0
         diamonds = repeat_count * diamond_count
 
-        active = get_active_idol()
-        if active is not None and diamonds > 0:
-            active["score"] += diamonds
-
-            # Kiểm tra mục tiêu điểm
-            tgt = state["target"]
-            if tgt["enabled"] and not tgt["reached"]:
-                session_score = active["score"] - active.get("session_base", 0)
-                if session_score >= tgt["score"]:
-                    tgt["reached"] = True
-                    # Không dừng nhận điểm — tiếp tục cộng OVER
-                    await broadcast_event({"type": "target_reached", "idol": active["name"]})
-
-            # Broadcast state + gift event cho overlay popup
-            await broadcast_state()
-            await broadcast_event({
-                "type": "gift",
-                "idol": active["name"],
-                "diamonds": diamonds,
-            })
+        if diamonds > 0:
+            # Đưa vào queue — không await broadcast tại đây để tránh block
+            if _gift_queue is not None:
+                await _gift_queue.put(diamonds)
 
     current_client = client
     state["room"] = unique_id
@@ -378,8 +371,22 @@ async def timer_loop():
             if t["remaining"] <= 0:
                 t["remaining"] = 0
                 t["running"] = False
+                # Chế độ auto: vào grace period "Thống kê" thay vì tắt ngay
+                if state["gift_mode"] == "auto":
+                    t["finishing"] = True
+                    t["grace_remaining"] = GIFT_GRACE_SECONDS
+                    # Vẫn giữ accepting_gifts = True trong grace period
+                else:
+                    t["finished"] = True
+
+        elif t.get("finishing") and t.get("grace_remaining", 0) > 0:
+            # Đang trong grace period — đếm ngược, vẫn nhận quà
+            t["grace_remaining"] -= 1
+            changed = True
+            if t["grace_remaining"] <= 0:
+                # Hết grace period → thực sự kết thúc
+                t["finishing"] = False
                 t["finished"] = True
-                # Chế độ auto: hết giờ → dừng nhận điểm ngay
                 if state["gift_mode"] == "auto":
                     state["accepting_gifts"] = False
 
@@ -387,9 +394,53 @@ async def timer_loop():
             await broadcast_state()
 
 
+async def gift_processor():
+    """
+    Drain gift queue và batch-broadcast để giảm số lần broadcast.
+    Cộng điểm ngay lập tức khi nhận từ queue, gom nhiều quà trong cùng
+    một tick thành 1 lần broadcast_state duy nhất.
+    """
+    while True:
+        # Chờ ít nhất 1 quà
+        diamonds = await _gift_queue.get()
+
+        # Drain thêm các quà đã sẵn trong queue (không chờ)
+        batch = diamonds
+        while not _gift_queue.empty():
+            try:
+                batch += _gift_queue.get_nowait()
+            except asyncio.QueueEmpty:
+                break
+
+        active = get_active_idol()
+        if active is not None and batch > 0:
+            active["score"] += batch
+
+            # Kiểm tra mục tiêu điểm
+            tgt = state["target"]
+            target_just_reached = False
+            if tgt["enabled"] and not tgt["reached"]:
+                session_score = active["score"] - active.get("session_base", 0)
+                if session_score >= tgt["score"]:
+                    tgt["reached"] = True
+                    target_just_reached = True
+
+            await broadcast_state()
+            await broadcast_event({
+                "type": "gift",
+                "idol": active["name"],
+                "diamonds": batch,
+            })
+            if target_just_reached:
+                await broadcast_event({"type": "target_reached", "idol": active["name"]})
+
+
 @app.on_event("startup")
 async def on_startup():
+    global _gift_queue
+    _gift_queue = asyncio.Queue()
     asyncio.create_task(timer_loop())
+    asyncio.create_task(gift_processor())
 
 
 # --------------------------------------------------------------------------
@@ -691,6 +742,8 @@ async def api_timer_start():
         t["remaining"] = t["duration"]
     t["running"] = True
     t["finished"] = False
+    t["finishing"] = False
+    t["grace_remaining"] = 0
     reset_session_scores()
     # Chế độ auto: bấm Start timer → tự bật nhận điểm
     if state["gift_mode"] == "auto":
@@ -713,16 +766,31 @@ async def api_timer_reset():
     t["remaining"] = t["duration"]
     t["running"] = False
     t["finished"] = False
+    t["finishing"] = False
+    t["grace_remaining"] = 0
     if state["gift_mode"] == "auto":
         state["accepting_gifts"] = False
     await broadcast_state()
     return {"ok": True}
+
+class GraceIn(BaseModel):
+    seconds: int
+
+@app.post("/api/timer/grace")
+async def api_set_grace(body: GraceIn):
+    global GIFT_GRACE_SECONDS
+    GIFT_GRACE_SECONDS = max(0, min(30, body.seconds))
+    state["timer"]["grace_config"] = GIFT_GRACE_SECONDS
+    await broadcast_state()
+    return {"ok": True, "grace_seconds": GIFT_GRACE_SECONDS}
 
 @app.post("/api/timer/finish")
 async def api_timer_finish():
     t = state["timer"]
     t["running"] = False
     t["finished"] = True
+    t["finishing"] = False
+    t["grace_remaining"] = 0
     if state["gift_mode"] == "auto":
         state["accepting_gifts"] = False
     await broadcast_state()

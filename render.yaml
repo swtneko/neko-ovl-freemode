@@ -1,12 +1,10 @@
-# Exported from Render on 2026-08-20T17:15:08Z
-version: "1"
 services:
-- type: web
-  name: neko-ovl-freemode
-  runtime: python
-  repo: https://github.com/swtneko/neko-ovl-freemode
-  plan: free
-  region: singapore
-  buildCommand: pip install -r requirements.txt
-  startCommand: python server.py
-  autoDeployTrigger: commit
+  - type: web
+    name: mca-overlay
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server.py
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        generateValue: true
