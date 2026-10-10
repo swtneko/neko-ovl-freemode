@@ -260,7 +260,7 @@ function render() {
         barWrap.setAttribute("data-left", sessionScore.toLocaleString());
         barWrap.setAttribute("data-right", tgt.score.toLocaleString());
       }
-      if (barEl) barEl.style.width = pct + "%";
+      if (barEl) barEl.style.width = Math.max(15, pct) + "%";
       if (t.finished) {
         timeBoxEl.className = "widget-freemode-time fail";
         timeBoxEl.textContent = "Thất bại";
@@ -295,14 +295,14 @@ function render() {
     } else if (standingBy) {
       timeBoxEl.className = "widget-freemode-time settling";
       timeBoxEl.textContent = "Chuẩn bị";
-      if (barEl) barEl.style.width = "0%";
+      if (barEl) barEl.style.width = "15%";
     } else {
       timeBoxEl.className = "widget-freemode-time";
       timeBoxEl.innerHTML = `<span id="w-timer">${fmtTime(t.remaining)}</span>`;
 
       const elapsed = t.duration - t.remaining;
       const pct = t.duration > 0 ? Math.min(100, (elapsed / t.duration) * 100) : 0;
-      if (barEl) barEl.style.width = pct + "%";
+      if (barEl) barEl.style.width = Math.max(15, pct) + "%";
     }
   }
 }
