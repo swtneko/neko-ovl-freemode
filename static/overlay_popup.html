@@ -100,6 +100,39 @@
       from { transform: translate3d(0, 0, 0); }
       to   { transform: translate3d(-50%, 0, 0); }
     }
+
+    /* 4. Mũi tên chạy khi đạt mục tiêu — copy từ CSS gốc của widget (chỉ hiện khi thanh có class "over") */
+    .widget-freemode-animate {
+      display: none;
+      align-items: center;
+      animation: animate 2s ease-in infinite forwards;
+      height: 100%;
+      left: 0;
+      position: absolute;
+      top: 0;
+      width: 100%;
+    }
+    .widget-freemode-bar.over .widget-freemode-animate {
+      display: flex;
+    }
+    .widget-freemode-animate > i {
+      background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACkAAAAqBAMAAADc2m9rAAAAG1BMVEX///8AAAD///////////////////////////8NUEtIAAAACXRSTlNMAEIKCTQ5HBMC5+OfAAAAj0lEQVQoz2XOwQmDABAF0SUVxCTkHIgFqBWoFViKJVi6DKhfmH98DMvWUscefXPuWVud+9/0W4mjn1/iaDMrRh2jjlHHqOJDFaOOUceoY9Qx6hh1jDpGHaOOUceo4y46RMdL37nQckHphCrlM6eoU1Qp6hR1ijpFnaJOUaeoU9Qp6hR1ijpFX0rRVSm6JI3uk/IqeEHlb8sAAAAASUVORK5CYII=);
+      background-repeat: no-repeat;
+      background-size: cover;
+      height: 14px;
+      margin-right: 6px;
+      width: 14px;
+    }
+    .widget-freemode-animate > i:first-child { opacity: .5; }
+    .widget-freemode-animate > i:nth-child(2) { opacity: .6; }
+    .widget-freemode-animate > i:nth-child(3) { opacity: .7; }
+    .widget-freemode-animate > i:nth-child(4) { opacity: .8; }
+    .widget-freemode-animate > i:nth-child(5) { opacity: .9; }
+    .widget-freemode-animate > i:nth-child(6) { opacity: 1; }
+    @keyframes animate {
+      0%   { left: -100%; }
+      to   { left: 100%; }
+    }
   </style>
 </head>
 <body>
@@ -126,6 +159,7 @@
       <!-- Thanh tiến trình & Điểm số (Mặc định không có OVER) -->
       <div class="widget-freemode-bar unlimit" id="w-bar-wrap" data-left="0" data-right="">
         <p class="nocorner" id="w-bar" style="width: 0%;"></p>
+        <span class="widget-freemode-animate"><i></i><i></i><i></i><i></i><i></i><i></i></span>
       </div>
 
     </div>
